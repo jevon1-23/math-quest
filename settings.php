@@ -11,7 +11,171 @@ $user = getCurrentUser();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Quest — Settings</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
+    <style>
+        .settings-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .settings-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #ffd700;
+            border-bottom: 2px solid rgba(255,215,0,0.3);
+            padding-bottom: 8px;
+        }
+        
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+        
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 26px;
+        }
+        
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #4CAF50;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        input[type="range"] {
+            width: 150px;
+            margin: 0 10px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            margin-top: 20px;
+            text-align: center;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76,175,80,0.4);
+        }
+        
+        #logisticsPanel {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+        }
+        
+        #logisticsPanel h4 {
+            color: #ffd700;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        #logisticsPanel ul {
+            margin: 10px 0 10px 20px;
+        }
+        
+        #logisticsPanel li {
+            margin: 5px 0;
+        }
+        
+        #moreBtn, #lessBtn {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        
+        #moreBtn:hover, #lessBtn:hover {
+            transform: scale(1.02);
+        }
+        
+        form button {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        form button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244,67,54,0.4);
+        }
+        
+        .card {
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        
+        @media (max-width: 600px) {
+            .settings-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .settings-section {
+                padding: 15px;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -89,21 +253,21 @@ $user = getCurrentUser();
             <form action="logout.php" method="POST">
                 <button type="submit">🚪 Logout</button>
             </form>
-            <p>Log out of your Math Quest account</p>
+            <p style="margin-top: 10px; color: rgba(255,255,255,0.7);">Log out of your Math Quest account</p>
         </div>
     </div>
 
-    <!-- About -->
+    <!-- About Section - FULLY INTACT -->
     <div class="settings-section">
-        <h3>📖 About</h3>
+        <h3>📖 About Math Quest</h3>
         <div>
             <p><strong>Math Quest</strong> is an interactive math learning game designed to make practicing math fun and engaging for students of all levels.</p>
             <p>From beginner addition all the way up to grand master logarithms and trigonometry — earn stars, climb the leaderboard, and master every level!</p>
             <p>© 2026 Math Quest | Created by Jevon Andrews</p>
-            <span>Version 2.0</span>
+            <p><strong>Version 2.0</strong></p>
 
             <div>
-                <button onclick="toggleLogistics()" id="moreBtn">More… ▼</button>
+                <button id="moreBtn" onclick="toggleLogistics()">📖 Learn More ▼</button>
             </div>
 
             <div id="logisticsPanel" style="display:none;">
@@ -122,10 +286,8 @@ $user = getCurrentUser();
                     <h4>⭐ Star System</h4>
                     <p>Stars are earned based on correct answers. Thresholds differ for regular vs boss levels:</p>
                     <ul>
-                        <li><strong>Regular levels (13 questions):</strong></li>
-                        <li>⭐⭐⭐ 11–13 correct &nbsp;⭐⭐ 8–10 correct &nbsp;⭐ 4–7 &nbsp;☆☆☆ 3 or fewer</li>
-                        <li><strong>Boss levels (23 questions):</strong></li>
-                        <li>⭐⭐⭐ 20–23 correct &nbsp;⭐⭐ 9–19 correct &nbsp;⭐ 6–8 &nbsp;☆☆☆ — 5 or fewer</li>
+                        <li><strong>Regular levels (13 questions):</strong> ⭐⭐⭐ 11–13 correct | ⭐⭐ 8–10 correct | ⭐ 4–7 correct | ☆☆☆ 3 or fewer</li>
+                        <li><strong>Boss levels (23 questions):</strong> ⭐⭐⭐ 20–23 correct | ⭐⭐ 9–19 correct | ⭐ 6–8 correct | ☆☆☆ 5 or fewer</li>
                     </ul>
                 </div>
 
@@ -137,7 +299,7 @@ $user = getCurrentUser();
                 <div>
                     <h4>🏆 Leaderboard</h4>
                     <p>Each game mode has its own leaderboard. Set your name in the leaderboard panel before playing. Your personal best score is saved — only your highest score counts.</p>
-                    <p>Tiers: 🏆 Champion (1st) · 💎 Diamond (2–4) · 🥇 Gold (5–8) · 🥈 Silver (9–13) · 🥉 Bronze (14–20)</p>
+                    <p><strong>Tiers:</strong> 🏆 Champion (1st) · 💎 Diamond (2–4) · 🥇 Gold (5–8) · 🥈 Silver (9–13) · 🥉 Bronze (14–20)</p>
                 </div>
 
                 <div>
@@ -160,12 +322,14 @@ $user = getCurrentUser();
                     </ul>
                 </div>
 
-                <button onclick="toggleLogistics()" id="lessBtn">Show less ▲</button>
+                <button id="lessBtn" onclick="toggleLogistics()">Show less ▲</button>
             </div>
         </div>
     </div>
 
-    <a href="index.php" class="btn">← Back to Home</a>
+    <div style="text-align: center;">
+        <a href="index.php" class="btn">← Back to Home</a>
+    </div>
 </div>
 
 <footer>
@@ -175,10 +339,16 @@ $user = getCurrentUser();
 <script>
 function toggleLogistics() {
     const panel = document.getElementById('logisticsPanel');
-    const btn = document.getElementById('moreBtn');
-    const open = panel.style.display === 'block';
-    panel.style.display = open ? 'none' : 'block';
-    if (btn) btn.style.display = open ? '' : 'none';
+    const moreBtn = document.getElementById('moreBtn');
+    const lessBtn = document.getElementById('lessBtn');
+    
+    if (panel.style.display === 'block') {
+        panel.style.display = 'none';
+        if (moreBtn) moreBtn.style.display = 'inline-block';
+    } else {
+        panel.style.display = 'block';
+        if (moreBtn) moreBtn.style.display = 'none';
+    }
 }
 
 function loadSettings() {
