@@ -13,6 +13,13 @@ $user = getCurrentUser();
     <title>Math Quest — Settings</title>
     <link rel="stylesheet" href="style.css?v=2">
     <style>
+        /* Settings Page Styles */
+        .settings-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        
         .settings-section {
             background: rgba(255,255,255,0.1);
             border-radius: 20px;
@@ -101,6 +108,7 @@ $user = getCurrentUser();
             text-align: center;
             border: none;
             cursor: pointer;
+            transition: all 0.3s;
         }
         
         .btn:hover {
@@ -138,10 +146,12 @@ $user = getCurrentUser();
             cursor: pointer;
             margin-top: 15px;
             font-weight: bold;
+            transition: all 0.3s;
         }
         
         #moreBtn:hover, #lessBtn:hover {
             transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(33,150,243,0.4);
         }
         
         form button {
@@ -152,6 +162,7 @@ $user = getCurrentUser();
             border-radius: 50px;
             cursor: pointer;
             font-weight: bold;
+            transition: all 0.3s;
         }
         
         form button:hover {
@@ -159,9 +170,9 @@ $user = getCurrentUser();
             box-shadow: 0 5px 15px rgba(244,67,54,0.4);
         }
         
-        .card {
-            max-width: 800px;
-            margin: 20px auto;
+        .back-home {
+            text-align: center;
+            margin-top: 20px;
         }
         
         @media (max-width: 600px) {
@@ -174,6 +185,10 @@ $user = getCurrentUser();
             .settings-section {
                 padding: 15px;
             }
+            
+            .settings-container {
+                padding: 0 15px;
+            }
         }
     </style>
 </head>
@@ -181,8 +196,8 @@ $user = getCurrentUser();
 
 <?php include 'nav.php'; ?>
 
-<div class="card">
-    <h1>⚙️ Settings</h1>
+<div class="settings-container">
+    <h1 style="text-align: center;">⚙️ Settings</h1>
 
     <!-- Sound settings -->
     <div class="settings-section">
@@ -327,7 +342,7 @@ $user = getCurrentUser();
         </div>
     </div>
 
-    <div style="text-align: center;">
+    <div class="back-home">
         <a href="index.php" class="btn">← Back to Home</a>
     </div>
 </div>
