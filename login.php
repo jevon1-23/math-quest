@@ -21,18 +21,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['role']    = $user['role'];
 
-        // ✅ FIRST LOGIN CHECK (initialize progress)
-        if (empty($user['progress'])) {
-
-            $defaultProgress = json_encode([
-                "coins" => 0,
-                "levels" => [],
-                "stars" => []
-            ]);
-
-            $update = $pdo->prepare("UPDATE users SET progress = ? WHERE id = ?");
-            $update->execute([$defaultProgress, $user['id']]);
-        }
+        // REMOVED: The progress column check since it doesn't exist in PostgreSQL
+        // Progress will be handled by the game progress table instead
 
         // Redirect to home
         header("Location: index.php");
@@ -47,13 +37,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
+    <title>Login - Math Quest</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="card">
-    <h2>🔐 Login</h2>
+    <h2>🔐 Login to Math Quest</h2>
 
     <?php if ($error): ?>
         <p style="color:red;"><?php echo htmlspecialchars($error); ?></p>
@@ -66,6 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </form>
 
     <p>Don't have an account? <a href="register.php">Register</a></p>
+    <p><a href="index.php">Back to Home</a></p>
 </div>
 
 </body>
