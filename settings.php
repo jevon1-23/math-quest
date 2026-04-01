@@ -14,6 +14,14 @@ $user = getCurrentUser();
     <link rel="stylesheet" href="style.css?v=2">
     <style>
         /* Settings Page Styles */
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #060f3a, #0a2a6e);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
         .settings-container {
             max-width: 800px;
             margin: 20px auto;
@@ -272,7 +280,7 @@ $user = getCurrentUser();
         </div>
     </div>
 
-    <!-- About Section - FULLY INTACT -->
+    <!-- About Section -->
     <div class="settings-section">
         <h3>📖 About Math Quest</h3>
         <div>
@@ -355,7 +363,6 @@ $user = getCurrentUser();
 function toggleLogistics() {
     const panel = document.getElementById('logisticsPanel');
     const moreBtn = document.getElementById('moreBtn');
-    const lessBtn = document.getElementById('lessBtn');
     
     if (panel.style.display === 'block') {
         panel.style.display = 'none';
