@@ -82,16 +82,9 @@ $user = getCurrentUser();
             padding: 10px;
             border-radius: 5px;
             margin-bottom: 15px;
-        }
-        .success {
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
-        }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
         }
         input {
             width: 100%;
@@ -120,7 +113,7 @@ $user = getCurrentUser();
         <h1>Settings</h1>
         
         <?php if ($message): ?>
-            <div class="message success"><?php echo htmlspecialchars($message); ?></div>
+            <div class="message"><?php echo htmlspecialchars($message); ?></div>
         <?php endif; ?>
         
         <div class="card">
@@ -160,34 +153,6 @@ $user = getCurrentUser();
             <p><strong>Role:</strong> <?php echo $user['role'] ?? 'User'; ?></p>
             <p><strong>Member since:</strong> <?php echo $user['created_at'] ?? 'Unknown'; ?></p>
         </div>
-        
-        <div class="card">
-            <h2>Game Preferences</h2>
-            <p>Sound: <span id="sound-status">Enabled</span> <button onclick="toggleSound()">Toggle</button></p>
-            <p>Music: <span id="music-status">Enabled</span> <button onclick="toggleMusic()">Toggle</button></p>
-        </div>
     </div>
-    
-    <script>
-        function toggleSound() {
-            let status = document.getElementById('sound-status');
-            status.textContent = status.textContent === 'Enabled' ? 'Disabled' : 'Enabled';
-            localStorage.setItem('soundEnabled', status.textContent === 'Enabled');
-        }
-        
-        function toggleMusic() {
-            let status = document.getElementById('music-status');
-            status.textContent = status.textContent === 'Enabled' ? 'Disabled' : 'Enabled';
-            localStorage.setItem('musicEnabled', status.textContent === 'Enabled');
-        }
-        
-        // Load saved preferences
-        if (localStorage.getItem('soundEnabled') === 'false') {
-            document.getElementById('sound-status').textContent = 'Disabled';
-        }
-        if (localStorage.getItem('musicEnabled') === 'false') {
-            document.getElementById('music-status').textContent = 'Disabled';
-        }
-    </script>
 </body>
 </html>
