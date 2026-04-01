@@ -127,9 +127,10 @@ class BaseGame {
     }
 
     // ── Server coin methods ────────────────────────────────────────────────
+    // FIXED: Changed paths from /math-game/coins.php to /coins.php
 
     _saveCoinsToServer() {
-        fetch('/math-game/coins.php', {
+        fetch('/coins.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -141,7 +142,7 @@ class BaseGame {
     }
 
     _loadCoinsFromServer() {
-        return fetch('/math-game/coins.php')
+        return fetch('/coins.php')
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.coins > 0) {
@@ -626,12 +627,13 @@ class BaseGame {
         setTimeout(() => { el.style.display = 'none'; }, 3000);
     }
 
+    // FIXED: Changed path from /math-game/save-score.php to /save-score.php
     _showLevelComplete() {
         if (typeof lbSubmitScore === 'function') {
             lbSubmitScore(this.score);
         }
 
-        fetch('/math-game/save-score.php', {
+        fetch('/save-score.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
