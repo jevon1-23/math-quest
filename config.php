@@ -10,14 +10,15 @@ if (session_status() === PHP_SESSION_NONE) {
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Database configuration
-define('DB_HOST', 'localhost');
+// PostgreSQL Database configuration for Render
+define('DB_HOST', 'dpg-d76ddqfkijhs73bfrnd0-a');
+define('DB_PORT', '5432');
 define('DB_NAME', 'math_quest');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_USER', 'math_user');
+define('DB_PASS', 'U3oUoGJEFt3j1ozOnbNtINIQeHB8cLRr');
 
 // Site URL (auto-detect for better portability)
-define('SITE_URL', 'http://' . $_SERVER['HTTP_HOST'] . '/math-game');
+define('SITE_URL', 'http://' . $_SERVER['HTTP_HOST']);
 
 // Site name
 define('SITE_NAME', 'Math Quest');
@@ -27,14 +28,16 @@ define('COINS_PER_CORRECT_ANSWER', 10);
 define('COINS_PER_STAR', 50);
 define('FREE_SPIN_COOLDOWN_HOURS', 24);
 
-// Database connection with error handling
+// Database connection with error handling (PostgreSQL version)
 function getDB() {
     static $pdo = null;
     
     if ($pdo === null) {
         try {
+            // PostgreSQL DSN
+            $dsn = "pgsql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";options='--client_encoding=UTF8'";
             $pdo = new PDO(
-                "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
+                $dsn,
                 DB_USER,
                 DB_PASS,
                 [
@@ -43,6 +46,10 @@ function getDB() {
                     PDO::ATTR_EMULATE_PREPARES => false
                 ]
             );
+            
+            // Set timezone
+            $pdo->exec("SET TIME ZONE 'UTC'");
+            
         } catch(PDOException $e) {
             // Log error instead of dying
             error_log("Database connection failed: " . $e->getMessage());
@@ -52,6 +59,10 @@ function getDB() {
     
     return $pdo;
 }
+
+// The rest of your functions remain the SAME!
+// They use PDO which works with both MySQL and PostgreSQL
+// Only the connection part needed to change
 
 // Check if user is logged in
 function isLoggedIn() {
@@ -118,10 +129,10 @@ function getUserStats($user_id) {
         $stmt = $pdo->prepare("
             SELECT 
                 COUNT(*) as total_levels,
-                SUM(stars) as total_stars,
-                SUM(CASE WHEN stars = 3 THEN 1 ELSE 0 END) as perfect_levels,
-                MAX(score) as highest_score,
-                SUM(score) as total_score
+                COALESCE(SUM(stars), 0) as total_stars,
+                COALESCE(SUM(CASE WHEN stars = 3 THEN 1 ELSE 0 END), 0) as perfect_levels,
+                COALESCE(MAX(score), 0) as highest_score,
+                COALESCE(SUM(score), 0) as total_score
             FROM user_progress 
             WHERE user_id = ?
         ");
@@ -260,7 +271,8 @@ function isLevelUnlocked($user_id, $skill, $level) {
 function addAchievement($user_id, $achievement_id) {
     try {
         $pdo = getDB();
-        $stmt = $pdo->prepare("INSERT IGNORE INTO user_achievements (user_id, achievement_id, earned_at) VALUES (?, ?, NOW())");
+        // PostgreSQL doesn't have INSERT IGNORE, so use ON CONFLICT
+        $stmt = $pdo->prepare("INSERT INTO user_achievements (user_id, achievement_id, earned_at) VALUES (?, ?, NOW()) ON CONFLICT DO NOTHING");
         return $stmt->execute([$user_id, $achievement_id]);
     } catch (PDOException $e) {
         error_log("Failed to add achievement: " . $e->getMessage());
