@@ -150,7 +150,7 @@ requireLogin();
         <a href="play.php" class="btn btn-primary">🎯 Play Game</a>
         <a href="shop.php" class="btn btn-shop">🛒 Visit Shop</a>
         <a href="daily-rewards.php" class="btn btn-daily">🎁 Daily Rewards</a>
-        
+        <a href="profile.php" class="btn btn-profile">👤 My Profile</a>
     </div>
     
     <!-- Info Section -->
