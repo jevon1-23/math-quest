@@ -1,9 +1,6 @@
 <?php
 require_once 'config.php';
-requireLogin();  // This forces login if not logged in
-?>
-<?php
-// index.php - Home page
+requireLogin();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,15 +18,19 @@ requireLogin();  // This forces login if not logged in
     <h1>🎮 Welcome to Math Quest!</h1>
     <p style="text-align: center; font-size: 1.1rem;">Test your math skills and become a Math Champion!</p>
     
-    <!-- Main Action Buttons -->
-    <div class="feature-buttons">
-        <a href="play.php" class="btn" style="padding: 12px 35px; font-size: 1.1rem;">🎯 Play Game</a>
-        <a href="shop.php" class="btn btn-shop" style="padding: 12px 35px; font-size: 1.1rem;">🛒 Visit Shop</a>
-        <a href="daily-rewards.php" class="btn btn-daily" style="padding: 12px 35px; font-size: 1.1rem;">🎁 Daily Rewards</a>
-        <a href="settings.php" class="btn" style="padding: 12px 35px; font-size: 1.1rem;">⚙️ Settings</a>
+    <div style="text-align: center; margin: 15px auto; padding: 10px; background: linear-gradient(135deg, #FFD700, #FFA500); border-radius: 50px; display: inline-block; width: auto;">
+        <span style="font-size: 24px;">💰</span>
+        <span id="coinCount" style="font-size: 28px; font-weight: bold; color: #fff;">0</span>
+        <span style="font-size: 18px;">Coins</span>
     </div>
     
-    <!-- Info Section -->
+    <div class="feature-buttons">
+        <a href="play.php" class="btn" style="padding: 12px 35px;">🎯 Play Game</a>
+        <a href="shop.php" class="btn btn-shop" style="padding: 12px 35px;">🛒 Visit Shop</a>
+        <a href="daily-rewards.php" class="btn btn-daily" style="padding: 12px 35px;">🎁 Daily Rewards</a>
+        <a href="settings_fixed.php" class="btn" style="padding: 12px 35px;">⚙️ Settings</a>
+    </div>
+    
     <div class="info-section">
         <div class="info-text">
             <p>✨ Complete levels, earn stars, and collect coins! ✨</p>
@@ -43,5 +44,6 @@ requireLogin();  // This forces login if not logged in
 </footer>
 
 <?php include 'background-music.php'; ?>
+<script src="/js/coin_sync.js"></script>
 </body>
 </html>

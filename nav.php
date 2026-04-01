@@ -84,109 +84,52 @@
     
     // Load coins from server and sync with localStorage
     function loadCoinsFromServer() {
-        fetch('/math-game/coins.php')
+        fetch('/coins.php')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     const serverCoins = data.coins;
-                    const localCoins = parseInt(localStorage.getItem('mathQuest_coins') || '0', 10);
-                    
-                    // Update localStorage to match server
-                    if (localCoins !== serverCoins) {
-                        localStorage.setItem('mathQuest_coins', serverCoins);
-                    }
-                    
-                    // Update display
+                    localStorage.setItem('mathQuest_coins', serverCoins);
                     updateNavCoinsDisplay(serverCoins);
-                } else {
-                    // Fallback to localStorage
-                    updateNavCoinsFromLocal();
                 }
             })
-            .catch(err => {
-                console.error('Error loading coins from server:', err);
-                updateNavCoinsFromLocal();
-            });
-    }
-    
-    // Update coin display from localStorage
-    function updateNavCoinsFromLocal() {
-        let coins = localStorage.getItem('mathQuest_coins');
-        if (!coins || coins === 'null' || coins === 'undefined') {
-            coins = '0';
-            localStorage.setItem('mathQuest_coins', '0');
-        }
-        coins = parseInt(coins, 10);
-        updateNavCoinsDisplay(coins);
+            .catch(err => console.error('Error loading coins:', err));
     }
     
     // Update the coin display element
     function updateNavCoinsDisplay(coins) {
         const coinElement = document.getElementById('coinCountNav');
-        if (coinElement && coinElement.textContent !== coins.toLocaleString()) {
+        if (coinElement) {
             coinElement.textContent = coins.toLocaleString();
-            const badge = document.getElementById('navCoinBadge');
-            if (badge) {
-                badge.style.transform = 'scale(1.05)';
-                setTimeout(() => badge.style.transform = 'scale(1)', 200);
-            }
         }
     }
     
     // Update profile avatar preview in navigation
     function updateNavAvatar() {
-        // Get current avatar from localStorage
-        let currentAvatar = localStorage.getItem('mathQuest_avatar');
+        let currentAvatar = localStorage.getItem('mathQuest_avatar') || 'default';
         let currentFrame = localStorage.getItem('mathQuest_frame');
         
-        // Handle null/undefined values
-        if (!currentAvatar || currentAvatar === 'null' || currentAvatar === 'undefined') {
-            currentAvatar = 'default';
-            localStorage.setItem('mathQuest_avatar', 'default');
-        }
-        
-        if (!currentFrame || currentFrame === 'null' || currentFrame === 'undefined') {
-            currentFrame = null;
-        }
-        
-        // Get the emoji for the current avatar
         const emoji = avatarEmojis[currentAvatar] || '🧑';
-        
-        // Update the avatar preview
         const navPreview = document.getElementById('navAvatarPreview');
         if (navPreview) {
             navPreview.innerHTML = emoji;
-            
-            // Apply frame effect if equipped
             if (currentFrame && frameStyles[currentFrame]) {
                 navPreview.style.boxShadow = frameStyles[currentFrame];
             } else {
                 navPreview.style.boxShadow = 'none';
             }
-            
-            // Add a little animation to show update
-            navPreview.style.transform = 'scale(1.1)';
-            setTimeout(() => {
-                navPreview.style.transform = 'scale(1)';
-            }, 200);
         }
     }
     
-    // Initialize everything
+    // Initialize
     function initNav() {
         updateNavAvatar();
-        loadCoinsFromServer(); // Load from server first
+        loadCoinsFromServer();
     }
     
-    // Run immediately
     initNav();
+    setInterval(loadCoinsFromServer, 10000);
     
-    // Update every 5 seconds to keep coins in sync
-    setInterval(() => {
-        loadCoinsFromServer();
-    }, 5000);
-    
-    // Also update when page becomes visible (user returns from another tab)
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
             updateNavAvatar();
@@ -194,15 +137,16 @@
         }
     });
     
-    // Listen for storage events (when localStorage changes in another tab)
     window.addEventListener('storage', (e) => {
         if (e.key === 'mathQuest_avatar' || e.key === 'mathQuest_frame') {
             updateNavAvatar();
         }
         if (e.key === 'mathQuest_coins') {
-            const newCoins = parseInt(e.newValue || '0', 10);
-            updateNavCoinsDisplay(newCoins);
+            updateNavCoinsDisplay(parseInt(e.newValue || '0', 10));
         }
     });
 })();
 </script>
+
+<!-- Coin Sync Script -->
+<script src="/js/coin_sync.js"></script>

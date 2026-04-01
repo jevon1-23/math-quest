@@ -1,7 +1,7 @@
 <?php
 // shop.php - Math Quest Shop Page
 require_once 'config.php';
-requireLogin();  // This MUST be at the very top
+requireLogin();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -11,147 +11,32 @@ requireLogin();  // This MUST be at the very top
     <title>Math Quest - Shop</title>
     <link rel="stylesheet" href="style.css?v=2">
     <style>
-        .shop-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .coin-wallet {
-            background: linear-gradient(135deg, #ffd700, #c9920a);
-            display: inline-block;
-            padding: 10px 25px;
-            border-radius: 50px;
-            font-weight: bold;
-            color: #1a1a2e;
-            margin-top: 15px;
-        }
-        .info-message {
-            background: rgba(88, 196, 245, 0.2);
-            border: 1px solid #58c4f5;
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            margin-bottom: 25px;
-            color: #58c4f5;
-        }
-        .shop-tabs {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-        .shop-tab {
-            padding: 10px 25px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-        .shop-tab.active {
-            background: linear-gradient(135deg, #ffd700, #c9920a);
-            color: #1a1a2e;
-        }
-        .shop-tab:hover {
-            transform: translateY(-2px);
-        }
-        .shop-section {
-            display: none;
-        }
-        .shop-section.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-        .items-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-        .shop-item {
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.3s;
-            border: 1px solid rgba(255,215,0,0.2);
-        }
-        .shop-item:hover {
-            transform: translateY(-5px);
-            border-color: #ffd700;
-        }
-        .shop-item.equipped {
-            border: 2px solid #ffd700;
-            background: rgba(255,215,0,0.1);
-        }
-        .item-icon {
-            font-size: 3rem;
-            margin-bottom: 10px;
-        }
-        .item-name {
-            font-weight: bold;
-            font-size: 1.1rem;
-            margin-bottom: 5px;
-            color: #ffd700;
-        }
-        .item-desc {
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.7);
-            margin-bottom: 10px;
-        }
-        .item-price {
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #ffd700;
-        }
-        .btn-shop {
-            padding: 8px 20px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-        .btn-buy {
-            background: linear-gradient(135deg, #ffd700, #c9920a);
-            color: #1a1a2e;
-        }
-        .btn-equip {
-            background: linear-gradient(135deg, #58c4f5, #1e90ff);
-            color: white;
-        }
-        .btn-owned {
-            background: rgba(255,255,255,0.2);
-            color: rgba(255,255,255,0.6);
-            cursor: not-allowed;
-        }
-        .message {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 10px;
-            display: none;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-        }
-        .message.success {
-            background: rgba(0,255,0,0.2);
-            border: 1px solid #0f0;
-            color: #0f0;
-        }
-        .message.error {
-            background: rgba(255,0,0,0.2);
-            border: 1px solid #f00;
-            color: #f00;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideIn {
-            from { transform: translateX(100px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
+        .shop-header { text-align: center; margin-bottom: 30px; }
+        .coin-wallet { background: linear-gradient(135deg, #ffd700, #c9920a); display: inline-block; padding: 10px 25px; border-radius: 50px; font-weight: bold; color: #1a1a2e; margin-top: 15px; }
+        .info-message { background: rgba(88,196,245,0.2); border: 1px solid #58c4f5; border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 25px; color: #58c4f5; }
+        .shop-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        .shop-tab { padding: 10px 25px; background: rgba(255,255,255,0.1); border-radius: 50px; cursor: pointer; transition: all 0.3s; font-weight: bold; }
+        .shop-tab.active { background: linear-gradient(135deg, #ffd700, #c9920a); color: #1a1a2e; }
+        .shop-tab:hover { transform: translateY(-2px); }
+        .shop-section { display: none; }
+        .shop-section.active { display: block; animation: fadeIn 0.3s ease; }
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .shop-item { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; text-align: center; transition: transform 0.3s; border: 1px solid rgba(255,215,0,0.2); }
+        .shop-item:hover { transform: translateY(-5px); border-color: #ffd700; }
+        .shop-item.equipped { border: 2px solid #ffd700; background: rgba(255,215,0,0.1); }
+        .item-icon { font-size: 3rem; margin-bottom: 10px; }
+        .item-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; color: #ffd700; }
+        .item-desc { font-size: 0.8rem; color: rgba(255,255,255,0.7); margin-bottom: 10px; }
+        .item-price { font-weight: bold; margin-bottom: 15px; color: #ffd700; }
+        .btn-shop { padding: 8px 20px; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        .btn-buy { background: linear-gradient(135deg, #ffd700, #c9920a); color: #1a1a2e; }
+        .btn-equip { background: linear-gradient(135deg, #58c4f5, #1e90ff); color: white; }
+        .btn-owned { background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); cursor: not-allowed; }
+        .message { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 10px; display: none; z-index: 1000; animation: slideIn 0.3s ease; }
+        .message.success { background: rgba(0,255,0,0.2); border: 1px solid #0f0; color: #0f0; }
+        .message.error { background: rgba(255,0,0,0.2); border: 1px solid #f00; color: #f00; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -162,48 +47,29 @@ requireLogin();  // This MUST be at the very top
     <div class="shop-header">
         <h1>🛒 Math Quest Shop</h1>
         <p>Spend your coins on awesome items!</p>
-        <div class="coin-wallet">
-            💰 Your Coins: <span id="shopCoinTotal">0</span> 🪙
-        </div>
+        <div class="coin-wallet">💰 Your Coins: <span id="shopCoinTotal">0</span> 🪙</div>
     </div>
     
-    <!-- Info Message -->
     <div class="info-message">
         🎖️ <strong>Badges & Themes are earned through achievements!</strong> 🎨<br>
         Complete special challenges, get perfect scores, or win them in the Lucky Spin Wheel!
     </div>
     
-    <!-- Shop Tabs (Only Avatars, Frames, Power-ups) -->
     <div class="shop-tabs">
         <div class="shop-tab active" data-tab="avatars">👤 Avatars</div>
         <div class="shop-tab" data-tab="frames">🖼️ Frames</div>
         <div class="shop-tab" data-tab="powerups">⚡ Power-ups</div>
     </div>
     
-    <!-- Avatars Section -->
-    <div id="avatarsSection" class="shop-section active">
-        <div class="items-grid" id="avatarsGrid"></div>
-    </div>
-    
-    <!-- Frames Section -->
-    <div id="framesSection" class="shop-section">
-        <div class="items-grid" id="framesGrid"></div>
-    </div>
-    
-    <!-- Power-ups Section -->
-    <div id="powerupsSection" class="shop-section">
-        <div class="items-grid" id="powerupsGrid"></div>
-    </div>
+    <div id="avatarsSection" class="shop-section active"><div class="items-grid" id="avatarsGrid"></div></div>
+    <div id="framesSection" class="shop-section"><div class="items-grid" id="framesGrid"></div></div>
+    <div id="powerupsSection" class="shop-section"><div class="items-grid" id="powerupsGrid"></div></div>
 </div>
 
-<footer>
-    <p>© 2026 Math Quest | Created by Jevon Andrews</p>
-</footer>
-
+<footer><p>© 2026 Math Quest | Created by Jevon Andrews</p></footer>
 <div id="message" class="message"></div>
 
 <script>
-// Shop System (Only Avatars, Frames, Power-ups)
 class MathQuestShop {
     constructor() {
         this.items = {
@@ -231,7 +97,6 @@ class MathQuestShop {
                 'retry_stars': { name: '🔄 Retry Keep Stars', price: 800, icon: '🔄', desc: 'Retry level without losing stars', type: 'consumable' }
             }
         };
-        
         this.init();
     }
     
@@ -251,9 +116,9 @@ class MathQuestShop {
         localStorage.setItem('mathQuest_frame', data.currentFrame);
         localStorage.setItem('mathQuest_unlockedAvatars', JSON.stringify(data.unlockedAvatars));
         localStorage.setItem('mathQuest_unlockedFrames', JSON.stringify(data.unlockedFrames));
-        
         const navCoin = document.getElementById('coinCountNav');
         if (navCoin) navCoin.textContent = data.coins.toLocaleString();
+        document.getElementById('shopCoinTotal').textContent = data.coins.toLocaleString();
     }
     
     showMessage(text, isError = false) {
@@ -261,31 +126,18 @@ class MathQuestShop {
         msgDiv.textContent = text;
         msgDiv.className = `message ${isError ? 'error' : 'success'}`;
         msgDiv.style.display = 'block';
-        setTimeout(() => {
-            msgDiv.style.display = 'none';
-        }, 3000);
+        setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
     }
     
     purchase(type, id, price) {
         const data = this.loadData();
         const unlockedKey = `unlocked${type.charAt(0).toUpperCase() + type.slice(1)}`;
-        
-        if (data[unlockedKey].includes(id)) {
-            this.showMessage(`✨ You already own ${this.items[type][id].name}!`, false);
-            return false;
-        }
-        
-        if (data.coins < price) {
-            this.showMessage(`💰 Not enough coins! Need ${price.toLocaleString()} coins.`, true);
-            return false;
-        }
-        
+        if (data[unlockedKey].includes(id)) { this.showMessage(`✨ You already own ${this.items[type][id].name}!`, false); return false; }
+        if (data.coins < price) { this.showMessage(`💰 Not enough coins! Need ${price.toLocaleString()} coins.`, true); return false; }
         data.coins -= price;
         data[unlockedKey].push(id);
-        
         if (type === 'avatars') data.currentAvatar = id;
         if (type === 'frames') data.currentFrame = id;
-        
         this.saveData(data);
         this.showMessage(`🎉 Purchased ${this.items[type][id].name}!`, false);
         this.render();
@@ -295,15 +147,9 @@ class MathQuestShop {
     equip(type, id) {
         const data = this.loadData();
         const unlockedKey = `unlocked${type.charAt(0).toUpperCase() + type.slice(1)}`;
-        
-        if (!data[unlockedKey].includes(id)) {
-            this.showMessage(`🔒 You haven't unlocked this item yet!`, true);
-            return false;
-        }
-        
+        if (!data[unlockedKey].includes(id)) { this.showMessage(`🔒 You haven't unlocked this item yet!`, true); return false; }
         if (type === 'avatars') data.currentAvatar = id;
         if (type === 'frames') data.currentFrame = id;
-        
         this.saveData(data);
         this.showMessage(`✨ Equipped ${this.items[type][id].name}!`, false);
         this.render();
@@ -312,17 +158,11 @@ class MathQuestShop {
     
     purchasePowerup(id, price) {
         const data = this.loadData();
-        
-        if (data.coins < price) {
-            this.showMessage(`💰 Not enough coins! Need ${price.toLocaleString()} coins.`, true);
-            return false;
-        }
-        
+        if (data.coins < price) { this.showMessage(`💰 Not enough coins! Need ${price.toLocaleString()} coins.`, true); return false; }
         data.coins -= price;
         let inventory = JSON.parse(localStorage.getItem('mathQuest_powerups') || '{}');
         inventory[id] = (inventory[id] || 0) + 1;
         localStorage.setItem('mathQuest_powerups', JSON.stringify(inventory));
-        
         this.saveData(data);
         this.showMessage(`🎉 Purchased ${this.items.powerups[id].name}! Use it in-game.`, false);
         this.render();
@@ -332,31 +172,21 @@ class MathQuestShop {
     renderCategory(type, data) {
         const grid = document.getElementById(`${type}Grid`);
         if (!grid) return;
-        
         grid.innerHTML = '';
         const unlockedKey = `unlocked${type.charAt(0).toUpperCase() + type.slice(1)}`;
         const currentKey = `current${type.charAt(0).toUpperCase() + type.slice(1)}`;
-        
         Object.entries(this.items[type]).forEach(([id, item]) => {
             const isUnlocked = data[unlockedKey].includes(id);
             const isEquipped = data[currentKey] === id;
-            
             const div = document.createElement('div');
             div.className = `shop-item ${isEquipped ? 'equipped' : ''}`;
-            
             div.innerHTML = `
                 <div class="item-icon">${item.icon}</div>
                 <div class="item-name">${item.name}</div>
                 <div class="item-desc">${item.desc}</div>
                 <div class="item-price">🪙 ${item.price.toLocaleString()}</div>
                 <div class="item-actions">
-                    ${!isUnlocked ? 
-                        `<button class="btn-shop btn-buy" onclick="shop.purchase('${type}', '${id}', ${item.price})">Buy</button>` :
-                        (!isEquipped ? 
-                            `<button class="btn-shop btn-equip" onclick="shop.equip('${type}', '${id}')">Equip</button>` :
-                            `<button class="btn-shop btn-owned" disabled>Owned</button>`
-                        )
-                    }
+                    ${!isUnlocked ? `<button class="btn-shop btn-buy" onclick="shop.purchase('${type}', '${id}', ${item.price})">Buy</button>` : (!isEquipped ? `<button class="btn-shop btn-equip" onclick="shop.equip('${type}', '${id}')">Equip</button>` : `<button class="btn-shop btn-owned" disabled>Owned</button>`)}
                 </div>
             `;
             grid.appendChild(div);
@@ -366,7 +196,6 @@ class MathQuestShop {
     renderPowerups(data) {
         const grid = document.getElementById('powerupsGrid');
         if (!grid) return;
-        
         grid.innerHTML = '';
         Object.entries(this.items.powerups).forEach(([id, item]) => {
             const div = document.createElement('div');
@@ -376,9 +205,7 @@ class MathQuestShop {
                 <div class="item-name">${item.name}</div>
                 <div class="item-desc">${item.desc}</div>
                 <div class="item-price">🪙 ${item.price.toLocaleString()}</div>
-                <div class="item-actions">
-                    <button class="btn-shop btn-buy" onclick="shop.purchasePowerup('${id}', ${item.price})">Buy</button>
-                </div>
+                <div class="item-actions"><button class="btn-shop btn-buy" onclick="shop.purchasePowerup('${id}', ${item.price})">Buy</button></div>
             `;
             grid.appendChild(div);
         });
@@ -403,20 +230,11 @@ class MathQuestShop {
         });
     }
     
-    init() {
-        this.render();
-        this.setupTabs();
-        setInterval(() => {
-            const data = this.loadData();
-            document.getElementById('shopCoinTotal').textContent = data.coins.toLocaleString();
-        }, 500);
-    }
+    init() { this.render(); this.setupTabs(); setInterval(() => { const data = this.loadData(); document.getElementById('shopCoinTotal').textContent = data.coins.toLocaleString(); }, 500); }
 }
 
 const shop = new MathQuestShop();
 </script>
-
-<?php include 'background-music.php'; ?>
-
+<script src="/js/coin_sync.js"></script>
 </body>
 </html>

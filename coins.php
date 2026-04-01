@@ -1,12 +1,16 @@
 <?php
-// coins.php - Simple coin operations
+// coins.php - Simple coin operations with error handling
 require_once 'config.php';
 
+// Clear any output buffering to prevent HTML from leaking
+ob_clean();
+
+// Set JSON header
 header('Content-Type: application/json');
+header('Cache-Control: no-cache, must-revalidate');
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
     echo json_encode(['error' => 'Not logged in', 'coins' => 0]);
     exit;
 }
@@ -18,7 +22,7 @@ try {
     
     // GET request - Load coins
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-        $stmt = $pdo->prepare("SELECT coins FROM users WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT COALESCE(coins, 0) as coins FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -36,7 +40,7 @@ try {
             exit;
         }
         
-        $coins = intval($data['coins']);
+        $coins = max(0, intval($data['coins']));
         
         $stmt = $pdo->prepare("UPDATE users SET coins = ? WHERE id = ?");
         $stmt->execute([$coins, $userId]);
@@ -51,6 +55,6 @@ try {
     
 } catch (PDOException $e) {
     error_log("Error in coins.php: " . $e->getMessage());
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['error' => 'Database error', 'coins' => 0]);
 }
 ?>
