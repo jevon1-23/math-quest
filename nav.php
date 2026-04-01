@@ -52,7 +52,7 @@
         <ul class="nav-links">
             <li><a href="index.php">🏠 Home</a></li>
             <li><a href="shop.php">🛒 Shop</a></li>
-            <li><a href="settings.php">⚙️ Settings</a></li>
+            <li><a href="settings_fixed.php">⚙️ Settings</a></li>
             <li><a href="play.php">🎮 Play Game</a></li>
         </ul>
     </div>
