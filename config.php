@@ -34,8 +34,8 @@ function getDB() {
     
     if ($pdo === null) {
         try {
-            // PostgreSQL DSN
-            $dsn = "pgsql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";options='--client_encoding=UTF8'";
+            // PostgreSQL DSN with SSL
+            $dsn = "pgsql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";sslmode=require";
             $pdo = new PDO(
                 $dsn,
                 DB_USER,
@@ -51,18 +51,14 @@ function getDB() {
             $pdo->exec("SET TIME ZONE 'UTC'");
             
         } catch(PDOException $e) {
-            // Log error instead of dying
+            // Log error and show detailed message
             error_log("Database connection failed: " . $e->getMessage());
-            die("Database connection failed. Please try again later.");
+            die("Database connection failed: " . $e->getMessage());
         }
     }
     
     return $pdo;
 }
-
-// The rest of your functions remain the SAME!
-// They use PDO which works with both MySQL and PostgreSQL
-// Only the connection part needed to change
 
 // Check if user is logged in
 function isLoggedIn() {
@@ -125,7 +121,6 @@ function getUserStats($user_id) {
     try {
         $pdo = getDB();
         
-        // Get levels completed and stars
         $stmt = $pdo->prepare("
             SELECT 
                 COUNT(*) as total_levels,
@@ -158,7 +153,7 @@ function getUserStats($user_id) {
     }
 }
 
-// Update user coins with validation
+// Update user coins
 function updateUserCoins($user_id, $amount) {
     try {
         $pdo = getDB();
@@ -203,13 +198,11 @@ function saveGameProgress($user_id, $skill, $level, $score, $stars, $coins_earne
     try {
         $pdo = getDB();
         
-        // Check if progress exists
         $stmt = $pdo->prepare("SELECT id FROM user_progress WHERE user_id = ? AND skill = ? AND level = ?");
         $stmt->execute([$user_id, $skill, $level]);
         $exists = $stmt->fetch();
         
         if ($exists) {
-            // Update existing progress if new score is better
             $stmt = $pdo->prepare("
                 UPDATE user_progress 
                 SET score = GREATEST(score, ?), 
@@ -219,7 +212,6 @@ function saveGameProgress($user_id, $skill, $level, $score, $stars, $coins_earne
             ");
             return $stmt->execute([$score, $stars, $user_id, $skill, $level]);
         } else {
-            // Insert new progress
             $stmt = $pdo->prepare("
                 INSERT INTO user_progress (user_id, skill, level, score, stars, created_at) 
                 VALUES (?, ?, ?, ?, ?, NOW())
@@ -232,7 +224,7 @@ function saveGameProgress($user_id, $skill, $level, $score, $stars, $coins_earne
     }
 }
 
-// Get user progress for a skill
+// Get user progress
 function getUserProgress($user_id, $skill) {
     try {
         $pdo = getDB();
@@ -248,10 +240,10 @@ function getUserProgress($user_id, $skill) {
 // Get unlocked levels
 function getUnlockedLevels($user_id, $skill) {
     $progress = getUserProgress($user_id, $skill);
-    $unlocked = [1]; // Level 1 is always unlocked
+    $unlocked = [1];
     
     foreach ($progress as $p) {
-        if ($p['level'] + 1 <= 20) { // Assuming 20 levels per skill
+        if ($p['level'] + 1 <= 20) {
             $unlocked[] = $p['level'] + 1;
         }
     }
@@ -262,7 +254,6 @@ function getUnlockedLevels($user_id, $skill) {
 // Check if level is unlocked
 function isLevelUnlocked($user_id, $skill, $level) {
     if ($level == 1) return true;
-    
     $unlocked = getUnlockedLevels($user_id, $skill);
     return in_array($level, $unlocked);
 }
@@ -271,7 +262,6 @@ function isLevelUnlocked($user_id, $skill, $level) {
 function addAchievement($user_id, $achievement_id) {
     try {
         $pdo = getDB();
-        // PostgreSQL doesn't have INSERT IGNORE, so use ON CONFLICT
         $stmt = $pdo->prepare("INSERT INTO user_achievements (user_id, achievement_id, earned_at) VALUES (?, ?, NOW()) ON CONFLICT DO NOTHING");
         return $stmt->execute([$user_id, $achievement_id]);
     } catch (PDOException $e) {
@@ -280,7 +270,7 @@ function addAchievement($user_id, $achievement_id) {
     }
 }
 
-// Check if user has achievement
+// Check achievement
 function hasAchievement($user_id, $achievement_id) {
     try {
         $pdo = getDB();
@@ -311,7 +301,7 @@ function verifyCSRFToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
-// Log user activity (for analytics)
+// Log activity
 function logActivity($user_id, $action, $details = null) {
     try {
         $pdo = getDB();
@@ -324,7 +314,7 @@ function logActivity($user_id, $action, $details = null) {
     }
 }
 
-// Format time (for leaderboards)
+// Format time
 function formatTime($seconds) {
     if ($seconds < 60) {
         return $seconds . 's';
@@ -339,7 +329,7 @@ function formatTime($seconds) {
     }
 }
 
-// Get leaderboard for a specific skill and level
+// Get leaderboard
 function getLeaderboard($skill, $level, $limit = 10) {
     try {
         $pdo = getDB();
