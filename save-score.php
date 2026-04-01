@@ -1,7 +1,9 @@
 <?php
-// save-score.php
+// save-score.php - PostgreSQL version with coin awards
 require_once 'config.php';
-session_start();
+
+// Set JSON header
+header('Content-Type: application/json');
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -11,7 +13,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $userId = $_SESSION['user_id'];
-$username = $_SESSION['username'] ?? 'Player';
+$username = $_SESSION['user_name'] ?? 'Player';
 
 // Get JSON data from the request
 $data = json_decode(file_get_contents("php://input"), true);
@@ -32,58 +34,88 @@ $correctCount = intval($data['correct_count'] ?? 0);
 $totalQuestions = intval($data['total_questions'] ?? 0);
 $fastestTime = isset($data['fastest_time']) ? floatval($data['fastest_time']) : null;
 $totalTime = floatval($data['total_time'] ?? 0);
+$isBoss = $data['is_boss'] ?? false;
 
 try {
-    // Start transaction
-    $conn->begin_transaction();
+    $pdo = getDB();
     
-    // 1. Save to leaderboard
-    $stmt = $conn->prepare("INSERT INTO leaderboard (username, score, skill, mode, created_at) 
-                           VALUES (?, ?, ?, ?, NOW())");
-    $stmt->bind_param("siss", $username, $score, $skill, $mode);
-    $stmt->execute();
+    // Calculate coins earned
+    $coinsEarned = 0;
     
-    // 2. Save detailed game score
-    $stmt = $conn->prepare("INSERT INTO game_scores 
-                           (user_id, skill, game_mode, level, score, stars, 
-                            correct_count, total_questions, fastest_time, total_time, created_at) 
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-                           ON DUPLICATE KEY UPDATE 
-                           score = GREATEST(score, VALUES(score)),
-                           stars = GREATEST(stars, VALUES(stars)),
-                           correct_count = VALUES(correct_count),
-                           total_questions = VALUES(total_questions),
-                           fastest_time = IF(fastest_time IS NULL OR VALUES(fastest_time) < fastest_time, 
-                                             VALUES(fastest_time), fastest_time),
-                           total_time = VALUES(total_time)");
-    $stmt->bind_param("issiiiiidi", $userId, $skill, $mode, $level, $score, $stars, 
-                      $correctCount, $totalQuestions, $fastestTime, $totalTime);
-    $stmt->execute();
+    // Base coins: 10 coins per correct answer
+    $coinsEarned += $correctCount * 10;
     
-    // 3. Update user progress (unlocked levels)
-    // Check if user has enough stars to unlock next level (need 2 stars)
-    $newUnlockedLevel = $level;
-    if ($stars >= 2) {
-        $newUnlockedLevel = $level + 1;
+    // Star bonuses
+    if ($stars >= 3) {
+        $coinsEarned += 150;  // 3 stars bonus
+    } elseif ($stars >= 2) {
+        $coinsEarned += 100;  // 2 stars bonus
+    } elseif ($stars >= 1) {
+        $coinsEarned += 50;   // 1 star bonus
     }
     
-    $stmt = $conn->prepare("INSERT INTO user_progress 
-                           (user_id, skill, game_mode, unlocked_level, total_score, updated_at) 
-                           VALUES (?, ?, ?, ?, ?, NOW())
-                           ON DUPLICATE KEY UPDATE 
-                           unlocked_level = GREATEST(unlocked_level, VALUES(unlocked_level)),
-                           total_score = total_score + VALUES(total_score)");
-    $stmt->bind_param("issii", $userId, $skill, $mode, $newUnlockedLevel, $score);
-    $stmt->execute();
+    // Boss level bonus
+    if ($isBoss) {
+        $coinsEarned += 100;
+    }
     
-    // Commit transaction
-    $conn->commit();
+    // Speed bonus (if average time per question < 5 seconds)
+    if ($correctCount > 0 && $totalTime > 0) {
+        $avgTime = $totalTime / $correctCount;
+        if ($avgTime < 5) {
+            $coinsEarned += 50;
+        }
+    }
     
-    echo json_encode(['success' => true, 'message' => 'Score saved successfully']);
+    // Update user coins
+    if ($coinsEarned > 0) {
+        $stmt = $pdo->prepare("UPDATE users SET coins = coins + ? WHERE id = ?");
+        $stmt->execute([$coinsEarned, $userId]);
+        
+        // Update session
+        $_SESSION['user_coins'] = ($_SESSION['user_coins'] ?? 0) + $coinsEarned;
+    }
     
-} catch (Exception $e) {
-    // Rollback on error
-    $conn->rollback();
+    // 1. Save to leaderboard (using the existing leaderboard table)
+    $stmt = $pdo->prepare("INSERT INTO leaderboard (username, score, skill, mode, created_at) 
+                           VALUES (?, ?, ?, ?, NOW())");
+    $stmt->execute([$username, $score, $skill, $mode]);
+    
+    // 2. Save detailed game score (using user_progress table)
+    // Check if progress exists
+    $stmt = $pdo->prepare("SELECT id FROM user_progress WHERE user_id = ? AND skill = ? AND level = ?");
+    $stmt->execute([$userId, $skill, $level]);
+    $exists = $stmt->fetch();
+    
+    if ($exists) {
+        // Update existing progress if new score is better
+        $stmt = $pdo->prepare("
+            UPDATE user_progress 
+            SET score = GREATEST(score, ?), 
+                stars = GREATEST(stars, ?), 
+                updated_at = NOW() 
+            WHERE user_id = ? AND skill = ? AND level = ?
+        ");
+        $stmt->execute([$score, $stars, $userId, $skill, $level]);
+    } else {
+        // Insert new progress
+        $stmt = $pdo->prepare("
+            INSERT INTO user_progress (user_id, skill, level, score, stars, created_at) 
+            VALUES (?, ?, ?, ?, ?, NOW())
+        ");
+        $stmt->execute([$userId, $skill, $level, $score, $stars]);
+    }
+    
+    // Return success with coins earned
+    echo json_encode([
+        'success' => true,
+        'message' => 'Score saved successfully',
+        'coins_earned' => $coinsEarned,
+        'total_coins' => getUserCoins($userId),
+        'stars' => $stars
+    ]);
+    
+} catch (PDOException $e) {
     error_log("Error saving score: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
