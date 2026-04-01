@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: math-quest
+    env: php
+    buildCommand: echo "No build commands needed"
+    startCommand: php -S 0.0.0.0:10000 -t .
+    plan: free
+    envVars:
+      - key: PHP_VERSION
+        value: 8.1
