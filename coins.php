@@ -1,16 +1,12 @@
 <?php
-// coins.php - Simple coin operations using users table
+// coins.php - Simple coin operations
 require_once 'config.php';
 
-// Set JSON header
 header('Content-Type: application/json');
-
-// Enable error logging
-error_reporting(E_ALL);
-ini_set('display_errors', 0); // Don't show errors in output
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
     echo json_encode(['error' => 'Not logged in', 'coins' => 0]);
     exit;
 }
@@ -45,7 +41,6 @@ try {
         $stmt = $pdo->prepare("UPDATE users SET coins = ? WHERE id = ?");
         $stmt->execute([$coins, $userId]);
         
-        // Update session
         $_SESSION['user_coins'] = $coins;
         
         echo json_encode(['success' => true, 'coins' => $coins]);

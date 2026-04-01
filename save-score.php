@@ -1,5 +1,5 @@
 <?php
-// save-score.php - PostgreSQL version with coin awards
+// save-score.php - PostgreSQL version with proper coin awards
 require_once 'config.php';
 
 // Set JSON header
@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
-    echo json_encode(['error' => 'Not logged in']);
+    echo json_encode(['error' => 'Not logged in', 'coins_earned' => 0]);
     exit;
 }
 
@@ -20,18 +20,18 @@ $data = json_decode(file_get_contents("php://input"), true);
 
 if (!$data) {
     http_response_code(400);
-    echo json_encode(['error' => 'Invalid data']);
+    echo json_encode(['error' => 'Invalid data', 'coins_earned' => 0]);
     exit;
 }
 
 // Extract data
 $score = intval($data['score'] ?? 0);
-$skill = $data['skill'] ?? 'unknown';
+$skill = $data['skill'] ?? 'beginner';
 $mode = $data['mode'] ?? 'unknown';
 $level = intval($data['level'] ?? 1);
 $stars = intval($data['stars'] ?? 0);
 $correctCount = intval($data['correct_count'] ?? 0);
-$totalQuestions = intval($data['total_questions'] ?? 0);
+$totalQuestions = intval($data['total_questions'] ?? 13);
 $fastestTime = isset($data['fastest_time']) ? floatval($data['fastest_time']) : null;
 $totalTime = floatval($data['total_time'] ?? 0);
 $isBoss = $data['is_boss'] ?? false;
@@ -67,22 +67,32 @@ try {
         }
     }
     
+    // Get current coins before update
+    $stmt = $pdo->prepare("SELECT coins FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $currentCoins = $stmt->fetchColumn();
+    $currentCoins = $currentCoins ? intval($currentCoins) : 0;
+    
     // Update user coins
     if ($coinsEarned > 0) {
         $stmt = $pdo->prepare("UPDATE users SET coins = coins + ? WHERE id = ?");
         $stmt->execute([$coinsEarned, $userId]);
         
         // Update session
-        $_SESSION['user_coins'] = ($_SESSION['user_coins'] ?? 0) + $coinsEarned;
+        $_SESSION['user_coins'] = $currentCoins + $coinsEarned;
     }
     
-    // 1. Save to leaderboard (using the existing leaderboard table)
+    $newTotalCoins = $currentCoins + $coinsEarned;
+    
+    // Log the coin award
+    error_log("User $userId earned $coinsEarned coins. Total: $newTotalCoins");
+    
+    // 1. Save to leaderboard
     $stmt = $pdo->prepare("INSERT INTO leaderboard (username, score, skill, mode, created_at) 
                            VALUES (?, ?, ?, ?, NOW())");
     $stmt->execute([$username, $score, $skill, $mode]);
     
     // 2. Save detailed game score (using user_progress table)
-    // Check if progress exists
     $stmt = $pdo->prepare("SELECT id FROM user_progress WHERE user_id = ? AND skill = ? AND level = ?");
     $stmt->execute([$userId, $skill, $level]);
     $exists = $stmt->fetch();
@@ -111,13 +121,18 @@ try {
         'success' => true,
         'message' => 'Score saved successfully',
         'coins_earned' => $coinsEarned,
-        'total_coins' => getUserCoins($userId),
-        'stars' => $stars
+        'total_coins' => $newTotalCoins,
+        'stars' => $stars,
+        'correct_count' => $correctCount,
+        'is_boss' => $isBoss
     ]);
     
 } catch (PDOException $e) {
     error_log("Error saving score: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode([
+        'error' => 'Database error: ' . $e->getMessage(),
+        'coins_earned' => 0
+    ]);
 }
 ?>
