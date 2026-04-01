@@ -1,14 +1,20 @@
 <?php
 require_once 'config.php';
 
+// Better session check
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Check if user is logged in
-if (!isLoggedIn()) {
-    header("Location: login.php");
+if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
+    header("Location: login.php?redirect=settings");
     exit;
 }
 
 $user = getCurrentUser();
 $message = "";
+$error = "";
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -25,7 +31,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             // Update session
             $_SESSION['user_name'] = $username;
-            $user = getCurrentUser(); // Refresh user data
+            $user = getCurrentUser();
         }
         
         if (isset($_POST['change_password'])) {
@@ -33,7 +39,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $new = $_POST['new_password'];
             $confirm = $_POST['confirm_password'];
             
-            // Verify current password
             $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
             $stmt->execute([$_SESSION['user_id']]);
             $user_data = $stmt->fetch();
@@ -45,97 +50,164 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $stmt->execute([$new_hash, $_SESSION['user_id']]);
                     $message = "✅ Password changed successfully!";
                 } else {
-                    $message = "❌ New passwords don't match!";
+                    $error = "❌ New passwords don't match!";
                 }
             } else {
-                $message = "❌ Current password is incorrect!";
+                $error = "❌ Current password is incorrect!";
             }
         }
         
     } catch (PDOException $e) {
-        $message = "❌ Error: " . $e->getMessage();
+        $error = "❌ Database error: " . $e->getMessage();
     }
 }
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Settings - Math Quest</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
         .settings-container {
             max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
+            margin: 20px auto;
+            padding: 15px;
         }
+        
         .card {
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            padding: 20px;
             margin-bottom: 20px;
         }
+        
         .message {
-            padding: 10px;
-            border-radius: 5px;
+            padding: 12px;
+            border-radius: 8px;
             margin-bottom: 15px;
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
+        
         .error-message {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        
         input {
             width: 100%;
-            padding: 8px;
-            margin: 5px 0 15px;
+            padding: 12px;
+            margin: 8px 0 15px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 8px;
+            font-size: 16px;
             box-sizing: border-box;
         }
+        
         .btn {
             background: #4CAF50;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            width: 100%;
+            font-weight: bold;
         }
+        
         .btn:hover {
             background: #45a049;
         }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
         h2 {
             margin-top: 0;
             color: #333;
+            font-size: 1.3rem;
         }
+        
         .stat {
-            margin: 10px 0;
-            padding: 8px;
+            margin: 12px 0;
+            padding: 10px;
             background: #f5f5f5;
-            border-radius: 4px;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .stat strong {
+            display: inline-block;
+            width: 120px;
+            color: #555;
+        }
+        
+        @media (max-width: 480px) {
+            .settings-container {
+                margin: 10px auto;
+                padding: 10px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            h2 {
+                font-size: 1.2rem;
+            }
+            
+            .stat strong {
+                width: 100px;
+                font-size: 0.9rem;
+            }
+            
+            .stat {
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
 <body>
-    <?php include 'nav.php'; ?>
-    
     <div class="settings-container">
         <h1>⚙️ Settings</h1>
         
         <?php if ($message): ?>
-            <div class="message <?php echo strpos($message, '❌') !== false ? 'error-message' : ''; ?>">
-                <?php echo $message; ?>
-            </div>
+            <div class="message"><?php echo htmlspecialchars($message); ?></div>
+        <?php endif; ?>
+        
+        <?php if ($error): ?>
+            <div class="message error-message"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
         
         <div class="card">
             <h2>👤 Profile Information</h2>
-            <form method="POST">
+            <form method="POST" action="">
                 <label>Username:</label>
                 <input type="text" name="username" value="<?php echo htmlspecialchars($user['username'] ?? ''); ?>" required>
                 
@@ -148,7 +220,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         <div class="card">
             <h2>🔒 Change Password</h2>
-            <form method="POST">
+            <form method="POST" action="">
                 <label>Current Password:</label>
                 <input type="password" name="current_password" required>
                 
@@ -166,17 +238,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <h2>📊 Account Statistics</h2>
             <div class="stat"><strong>Username:</strong> <?php echo htmlspecialchars($user['username'] ?? ''); ?></div>
             <div class="stat"><strong>Email:</strong> <?php echo htmlspecialchars($user['email'] ?? ''); ?></div>
-            <div class="stat"><strong>💰 Coins:</strong> <?php echo $user['coins'] ?? 0; ?></div>
-            <div class="stat"><strong>👑 Role:</strong> <?php echo $user['role'] ?? 'User'; ?></div>
-            <div class="stat"><strong>📅 Member since:</strong> <?php echo $user['created_at'] ?? 'Unknown'; ?></div>
+            <div class="stat"><strong>💰 Coins:</strong> <?php echo number_format($user['coins'] ?? 0); ?></div>
+            <div class="stat"><strong>👑 Role:</strong> <?php echo ucfirst($user['role'] ?? 'User'); ?></div>
+            <div class="stat"><strong>📅 Member since:</strong> <?php echo date('M d, Y', strtotime($user['created_at'] ?? 'now')); ?></div>
         </div>
         
         <div class="card">
-            <h2>🎮 Game Links</h2>
-            <p><a href="index.php">🏠 Home</a></p>
-            <p><a href="profile.php">👤 Profile</a></p>
-            <p><a href="shop.php">🛒 Shop</a></p>
-            <p><a href="logout.php">🚪 Logout</a></p>
+            <h2>🎮 Quick Links</h2>
+            <div class="stat"><a href="index.php">🏠 Home</a></div>
+            <div class="stat"><a href="profile.php">👤 Profile</a></div>
+            <div class="stat"><a href="shop.php">🛒 Shop</a></div>
+            <div class="stat"><a href="logout.php">🚪 Logout</a></div>
         </div>
     </div>
 </body>
