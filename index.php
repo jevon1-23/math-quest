@@ -73,6 +73,6 @@ requireLogin();
 </footer>
 
 <?php include 'background-music.php'; ?>
-<script src="/js/coin_sync.js"></script>
+<script src="/js/core/coin_sync.js"></script>
 </body>
 </html>
