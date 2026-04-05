@@ -21,12 +21,6 @@ requireLogin();
 <div class="card">
     <h1>🎮 Choose Your Challenge</h1>
     <p>Select a skill level to begin your math journey!</p>
-    
-    <div style="text-align: center; margin: 15px 0;">
-        <span style="background: linear-gradient(135deg, #FFD700, #FFA500); padding: 8px 20px; border-radius: 30px;">
-            💰 <span id="coinCount">0</span> Coins
-        </span>
-    </div>
 
     <div class="skills-grid">
         <div class="skill-card beginner" onclick="window.location.href='game-selector.php?skill=beginner'">
