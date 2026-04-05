@@ -7,8 +7,9 @@ RUN apt-get update && apt-get install -y libpq-dev \
 # Enable Apache modules
 RUN a2enmod rewrite headers
 
-# Enable PHP error reporting
-RUN echo "display_errors = On" >> /usr/local/etc/php/conf.d/error.ini \
+# Disable display_errors in production — errors go to log only
+RUN echo "display_errors = Off" >> /usr/local/etc/php/conf.d/error.ini \
+    && echo "log_errors = On" >> /usr/local/etc/php/conf.d/error.ini \
     && echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/error.ini
 
 # Set ServerName

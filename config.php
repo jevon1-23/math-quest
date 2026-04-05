@@ -6,19 +6,21 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Error reporting (disable in production)
+// Error reporting — never show errors to users in production
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 
-// PostgreSQL Database configuration for Render
-define('DB_HOST', 'dpg-d76ddqfkijhs73bfrnd0-a');
-define('DB_PORT', '5432');
-define('DB_NAME', 'math_quest');
-define('DB_USER', 'math_user');
-define('DB_PASS', 'U3oUoGJEFt3j1ozOnbNtINIQeHB8cLRr');
+// PostgreSQL Database configuration — read from environment variables
+// Set these in Render dashboard: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
+define('DB_HOST', getenv('DB_HOST') ?: 'dpg-d76ddqfkijhs73bfrnd0-a');
+define('DB_PORT', getenv('DB_PORT') ?: '5432');
+define('DB_NAME', getenv('DB_NAME') ?: 'math_quest');
+define('DB_USER', getenv('DB_USER') ?: 'math_user');
+define('DB_PASS', getenv('DB_PASS') ?: '');
 
-// Site URL (auto-detect for better portability)
-define('SITE_URL', 'http://' . $_SERVER['HTTP_HOST']);
+// Site URL — always HTTPS on Render
+define('SITE_URL', 'https://' . $_SERVER['HTTP_HOST']);
 
 // Site name
 define('SITE_NAME', 'Math Quest');
@@ -51,9 +53,8 @@ function getDB() {
             $pdo->exec("SET TIME ZONE 'UTC'");
             
         } catch(PDOException $e) {
-            // Log error and show detailed message
             error_log("Database connection failed: " . $e->getMessage());
-            die("Database connection failed: " . $e->getMessage());
+            die("Database connection failed. Please try again later.");
         }
     }
     

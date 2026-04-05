@@ -131,7 +131,7 @@ try {
     error_log("Error saving score: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
-        'error' => 'Database error: ' . $e->getMessage(),
+        'error' => 'Failed to save score. Please try again.',
         'coins_earned' => 0
     ]);
 }

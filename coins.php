@@ -30,24 +30,11 @@ try {
         
         echo json_encode(['success' => true, 'coins' => $coins]);
     }
-    // POST request - Save coins
+    // POST not supported — coin changes go through save-score.php or update-coins.php
     elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $input = file_get_contents("php://input");
-        $data = json_decode($input, true);
-        
-        if (!$data || !isset($data['coins'])) {
-            echo json_encode(['error' => 'Invalid input']);
-            exit;
-        }
-        
-        $coins = max(0, intval($data['coins']));
-        
-        $stmt = $pdo->prepare("UPDATE users SET coins = ? WHERE id = ?");
-        $stmt->execute([$coins, $userId]);
-        
-        $_SESSION['user_coins'] = $coins;
-        
-        echo json_encode(['success' => true, 'coins' => $coins]);
+        http_response_code(405);
+        echo json_encode(['error' => 'Method not allowed']);
+        exit;
     }
     else {
         echo json_encode(['error' => 'Method not allowed']);

@@ -9,6 +9,7 @@ Thumbs.db
 # Logs
 *.log
 error_log
+php_errors.log
 
 # Database
 *.db
@@ -22,11 +23,19 @@ temp/
 *.bak
 *.backup
 
-# Environment files
+# Environment / secrets — NEVER commit these
 .env
-# Add these lines to your existing .gitignore
+*.env
+
+# Debug and setup scripts — keep out of repo
+coins_debug.php
+fix_coins_table.php
+fix_database.php
+force_add_coins.php
+test_coin_update.php
+test_pdo.php
+test_save_score.php
+setup_admin.php
+setup_database.php
+file_list.php
 install.php
-.env
-*.log
-php_errors.log
-.htaccess.bak

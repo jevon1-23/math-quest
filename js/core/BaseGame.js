@@ -79,10 +79,10 @@ class BaseGame {
     _playSound(name) {
         if (!this.soundEnabled) return;
         const map = {
-            correct : '/math-game/sounds/correct.mp3',
-            wrong   : '/math-game/sounds/wrong.mp3',
-            victory : '/math-game/sounds/victory.mp3',
-            fail    : '/math-game/sounds/fail.mp3'
+            correct : '/sounds/correct.mp3',
+            wrong   : '/sounds/wrong.mp3',
+            victory : '/sounds/victory.mp3',
+            fail    : '/sounds/fail.mp3'
         };
         const sound = this._getSound(map[name] || name);
         if (sound) { try { sound.currentTime = 0; sound.play(); } catch (e) {} }

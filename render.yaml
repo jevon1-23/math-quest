@@ -8,3 +8,13 @@ services:
     envVars:
       - key: PHP_VERSION
         value: 8.1
+      - key: DB_HOST
+        sync: false   # Set manually in Render dashboard
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        sync: false   # Set manually in Render dashboard
+      - key: DB_USER
+        sync: false   # Set manually in Render dashboard
+      - key: DB_PASS
+        sync: false   # Set manually in Render dashboard — NEVER commit the real value

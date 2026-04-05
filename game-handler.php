@@ -179,29 +179,100 @@ function calcToggleAngle() {
     document.getElementById('angleToggle').textContent = 'Mode: ' + (calcAngleDeg ? 'DEG' : 'RAD');
 }
 
+// Safe math parser — no eval() used anywhere
+function safeMathParse(raw) {
+    // Normalise input
+    let src = raw
+        .replace(/×/g, '*').replace(/÷/g, '/')
+        .replace(/π/g, '3.14159265358979')
+        .replace(/\^/g, '**')
+        .trim();
+
+    const toRad = v => calcAngleDeg ? v * Math.PI / 180 : v;
+    let pos = 0;
+
+    function peek()  { return src[pos]; }
+    function consume(ch) { if (src[pos] !== ch) throw new Error('Expected ' + ch); pos++; }
+
+    function parseExpr()   { return parseAddSub(); }
+
+    function parseAddSub() {
+        let v = parseMulDiv();
+        while (pos < src.length && (peek() === '+' || peek() === '-')) {
+            const op = src[pos++];
+            const r  = parseMulDiv();
+            v = op === '+' ? v + r : v - r;
+        }
+        return v;
+    }
+
+    function parseMulDiv() {
+        let v = parsePow();
+        while (pos < src.length && (peek() === '*' || peek() === '/')) {
+            const op = src[pos++];
+            // handle **
+            if (op === '*' && peek() === '*') { pos++; v = Math.pow(v, parsePow()); continue; }
+            const r = parsePow();
+            v = op === '*' ? v * r : v / r;
+        }
+        return v;
+    }
+
+    function parsePow() { return parseUnary(); }
+
+    function parseUnary() {
+        if (peek() === '-') { pos++; return -parsePrimary(); }
+        if (peek() === '+') { pos++; return  parsePrimary(); }
+        return parsePrimary();
+    }
+
+    function parsePrimary() {
+        // Number
+        if (/[\d.]/.test(peek() || '')) {
+            let num = '';
+            while (pos < src.length && /[\d.]/.test(src[pos])) num += src[pos++];
+            return parseFloat(num);
+        }
+        // Parenthesised expression
+        if (peek() === '(') {
+            consume('(');
+            const v = parseExpr();
+            consume(')');
+            return v;
+        }
+        // Named functions / constants
+        const rest = src.slice(pos);
+        const fnMatch = rest.match(/^(sin|cos|tan|log|ln|sqrt|√|abs)/);
+        if (fnMatch) {
+            const fn = fnMatch[1]; pos += fn.length;
+            consume('(');
+            const arg = parseExpr();
+            consume(')');
+            switch (fn) {
+                case 'sin': return Math.sin(toRad(arg));
+                case 'cos': return Math.cos(toRad(arg));
+                case 'tan': return Math.tan(toRad(arg));
+                case 'log': return Math.log10(arg);
+                case 'ln':  return Math.log(arg);
+                case 'sqrt': case '√': return Math.sqrt(arg);
+                case 'abs': return Math.abs(arg);
+            }
+        }
+        throw new Error('Unexpected character: ' + peek());
+    }
+
+    const result = parseExpr();
+    if (pos !== src.length) throw new Error('Unexpected token at pos ' + pos);
+    return result;
+}
+
 function calcEquals() {
     try {
-        let expr = calcExpression
-            .replace(/×/g, '*')
-            .replace(/÷/g, '/')
-            .replace(/π/g, Math.PI)
-            .replace(/\^/g, '**');
-
-        const toRad = calcAngleDeg ? (x => x * Math.PI / 180) : (x => x);
-        expr = expr
-            .replace(/sin\(([^)]+)\)/g, (_, x) => Math.sin(toRad(eval(x))))
-            .replace(/cos\(([^)]+)\)/g, (_, x) => Math.cos(toRad(eval(x))))
-            .replace(/tan\(([^)]+)\)/g, (_, x) => Math.tan(toRad(eval(x))))
-            .replace(/log\(([^)]+)\)/g, (_, x) => Math.log10(eval(x)))
-            .replace(/ln\(([^)]+)\)/g,  (_, x) => Math.log(eval(x)))
-            .replace(/√\(([^)]+)\)/g,   (_, x) => Math.sqrt(eval(x)));
-
-        const result = eval(expr);
+        const result  = safeMathParse(calcExpression);
         const rounded = Math.round(result * 1e10) / 1e10;
-
         document.getElementById('calcExpr').textContent = calcExpression + ' =';
-        document.getElementById('calcVal').textContent  = rounded;
-        calcExpression = String(rounded);
+        document.getElementById('calcVal').textContent  = isNaN(rounded) ? 'Error' : rounded;
+        calcExpression = isNaN(rounded) ? '' : String(rounded);
     } catch(e) {
         document.getElementById('calcVal').textContent = 'Error';
         calcExpression = '';
