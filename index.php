@@ -136,11 +136,11 @@ requireLogin();
     <h1>🎮 Welcome to Math Quest!</h1>
     <p style="text-align: center; font-size: 1.1rem;">Test your math skills and become a Math Champion!</p>
     
-    <!-- Coin Display -->
+    <!-- Coin Display — loaded directly from DB, no flash -->
     <div style="display: flex; justify-content: center;">
         <div class="coin-display-large">
             <span>💰</span>
-            <span id="coinCount">0</span>
+            <span id="coinCount"><?php echo number_format(getUserCoins($_SESSION['user_id'])); ?></span>
             <span>Coins</span>
         </div>
     </div>
