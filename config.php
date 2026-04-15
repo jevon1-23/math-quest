@@ -1,5 +1,5 @@
 <?php
-// config.php - Database and configuration
+// config.php - SQLite Database configuration for Render Free Tier
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
@@ -10,14 +10,6 @@ if (session_status() === PHP_SESSION_NONE) {
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-
-// PostgreSQL Database configuration — read from environment variables
-// Set these in Render dashboard: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
-define('DB_HOST', getenv('DB_HOST') ?: 'dpg-d76ddqfkijhs73bfrnd0-a');
-define('DB_PORT', getenv('DB_PORT') ?: '5432');
-define('DB_NAME', getenv('DB_NAME') ?: 'math_quest');
-define('DB_USER', getenv('DB_USER') ?: 'math_user');
-define('DB_PASS', getenv('DB_PASS') ?: '');
 
 // Site URL — always HTTPS on Render
 define('SITE_URL', 'https://' . $_SERVER['HTTP_HOST']);
@@ -30,27 +22,89 @@ define('COINS_PER_CORRECT_ANSWER', 10);
 define('COINS_PER_STAR', 50);
 define('FREE_SPIN_COOLDOWN_HOURS', 24);
 
-// Database connection with error handling (PostgreSQL version)
+// Database connection with error handling (SQLite version)
 function getDB() {
     static $pdo = null;
     
     if ($pdo === null) {
         try {
-            // PostgreSQL DSN with SSL
-            $dsn = "pgsql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";sslmode=require";
-            $pdo = new PDO(
-                $dsn,
-                DB_USER,
-                DB_PASS,
-                [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false
-                ]
-            );
+            // Database path - using /tmp for Render free tier (writable)
+            $dbPath = '/tmp/mathquest.db';
             
-            // Set timezone
-            $pdo->exec("SET TIME ZONE 'UTC'");
+            // Alternative: use project directory (might have permission issues)
+            // $dbPath = __DIR__ . '/database/mathquest.db';
+            
+            // Create connection
+            $pdo = new PDO("sqlite:" . $dbPath);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            
+            // Enable foreign keys
+            $pdo->exec("PRAGMA foreign_keys = ON");
+            
+            // Create tables if they don't exist
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    coins INTEGER DEFAULT 0,
+                    role TEXT DEFAULT 'user',
+                    current_avatar TEXT DEFAULT 'default',
+                    current_frame TEXT DEFAULT 'default',
+                    current_badge TEXT,
+                    current_theme TEXT DEFAULT 'default',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS user_progress (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    skill TEXT NOT NULL,
+                    level INTEGER NOT NULL,
+                    score INTEGER DEFAULT 0,
+                    stars INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    UNIQUE(user_id, skill, level)
+                );
+                
+                CREATE TABLE IF NOT EXISTS user_unlocks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    item_type TEXT NOT NULL,
+                    item_id TEXT NOT NULL,
+                    unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, item_type, item_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+                
+                CREATE TABLE IF NOT EXISTS user_achievements (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    achievement_id TEXT NOT NULL,
+                    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, achievement_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+                
+                CREATE TABLE IF NOT EXISTS user_activity (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    action TEXT NOT NULL,
+                    details TEXT,
+                    ip_address TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+                
+                CREATE INDEX IF NOT EXISTS idx_user_progress_user ON user_progress(user_id);
+                CREATE INDEX IF NOT EXISTS idx_user_progress_skill ON user_progress(skill);
+                CREATE INDEX IF NOT EXISTS idx_user_activity_user ON user_activity(user_id);
+                CREATE INDEX IF NOT EXISTS idx_user_activity_created ON user_activity(created_at);
+            ");
             
         } catch(PDOException $e) {
             error_log("Database connection failed: " . $e->getMessage());
@@ -206,16 +260,16 @@ function saveGameProgress($user_id, $skill, $level, $score, $stars, $coins_earne
         if ($exists) {
             $stmt = $pdo->prepare("
                 UPDATE user_progress 
-                SET score = GREATEST(score, ?), 
-                    stars = GREATEST(stars, ?), 
-                    updated_at = NOW() 
+                SET score = MAX(score, ?), 
+                    stars = MAX(stars, ?), 
+                    updated_at = CURRENT_TIMESTAMP 
                 WHERE user_id = ? AND skill = ? AND level = ?
             ");
             return $stmt->execute([$score, $stars, $user_id, $skill, $level]);
         } else {
             $stmt = $pdo->prepare("
                 INSERT INTO user_progress (user_id, skill, level, score, stars, created_at) 
-                VALUES (?, ?, ?, ?, ?, NOW())
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ");
             return $stmt->execute([$user_id, $skill, $level, $score, $stars]);
         }
@@ -244,7 +298,7 @@ function getUnlockedLevels($user_id, $skill) {
     $unlocked = [1];
     
     foreach ($progress as $p) {
-        if ($p['level'] + 1 <= 20) {
+        if ($p['level'] + 1 <= 45) {
             $unlocked[] = $p['level'] + 1;
         }
     }
@@ -263,7 +317,7 @@ function isLevelUnlocked($user_id, $skill, $level) {
 function addAchievement($user_id, $achievement_id) {
     try {
         $pdo = getDB();
-        $stmt = $pdo->prepare("INSERT INTO user_achievements (user_id, achievement_id, earned_at) VALUES (?, ?, NOW()) ON CONFLICT DO NOTHING");
+        $stmt = $pdo->prepare("INSERT INTO user_achievements (user_id, achievement_id, earned_at) VALUES (?, ?, CURRENT_TIMESTAMP)");
         return $stmt->execute([$user_id, $achievement_id]);
     } catch (PDOException $e) {
         error_log("Failed to add achievement: " . $e->getMessage());
@@ -306,7 +360,7 @@ function verifyCSRFToken($token) {
 function logActivity($user_id, $action, $details = null) {
     try {
         $pdo = getDB();
-        $stmt = $pdo->prepare("INSERT INTO user_activity (user_id, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())");
+        $stmt = $pdo->prepare("INSERT INTO user_activity (user_id, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)");
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         return $stmt->execute([$user_id, $action, $details, $ip]);
     } catch (PDOException $e) {
