@@ -22,8 +22,8 @@ define('COINS_PER_CORRECT_ANSWER', 10);
 define('COINS_PER_STAR', 50);
 define('FREE_SPIN_COOLDOWN_HOURS', 24);
 
-// Supabase Database Configuration
-define('DB_HOST', 'db.ebprinvbcgwuelefdqkz.supabase.co');
+// Supabase Database Configuration - FIXED: Using connection pooler for IPv4
+define('DB_HOST', 'aws-0-us-east-1.pooler.supabase.com');  // ← THIS IS THE FIX
 define('DB_PORT', '5432');
 define('DB_NAME', 'postgres');
 define('DB_USER', 'postgres');
@@ -110,6 +110,9 @@ function getDB() {
     return $pdo;
 }
 
+// The rest of your functions remain exactly the same...
+// (all the functions from isLoggedIn() to getLeaderboard() stay as they are)
+
 // Check if user is logged in
 function isLoggedIn() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
@@ -151,7 +154,6 @@ function getCurrentUser() {
             $stmt->execute([$_SESSION['user_id']]);
             $user = $stmt->fetch();
             
-            // Update session data
             if ($user) {
                 $_SESSION['user_name'] = $user['username'];
                 $_SESSION['user_coins'] = $user['coins'] ?? 0;
