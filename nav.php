@@ -30,31 +30,13 @@
             <span style="color: white; font-weight: 600; font-size: 0.85rem;">Profile</span>
         </div>
         
-        <!-- Coin Display -->
-        <span id="navCoinBadge" style="
-            font-family:'Fredoka One',cursive;
-            font-size:0.95rem;
-            color:#ffd700;
-            background:rgba(255,215,0,0.12);
-            border:1.5px solid rgba(255,215,0,0.35);
-            border-radius:20px;
-            padding:3px 14px;
-            letter-spacing:0.3px;
-            cursor:default;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        ">
-            🪙 <span id="coinCountNav">0</span>
-        </span>
         
 
             <ul class="nav-links">
     <li><a href="index.php">🏠 Home</a></li>
     <li><a href="shop.php">🛒 Shop</a></li>
     <li><a href="profile.php">👤 Profile</a></li>
-    <li><a href="settings_fixed.php">⚙️ Settings</a></li>
+    <li><a href="settings.php">⚙️ Settings</a></li>
     <li><a href="play.php">🎮 Play</a></li>
 </ul>
         
@@ -85,28 +67,6 @@
         'ruby': 'box-shadow: 0 0 0 2px #ff4444, 0 0 0 4px #cc3333;'
     };
     
-    // Load coins from server and sync with localStorage
-    function loadCoinsFromServer() {
-        fetch('/coins.php')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const serverCoins = data.coins;
-                    localStorage.setItem('mathQuest_coins', serverCoins);
-                    updateNavCoinsDisplay(serverCoins);
-                }
-            })
-            .catch(err => console.error('Error loading coins:', err));
-    }
-    
-    // Update the coin display element
-    function updateNavCoinsDisplay(coins) {
-        const coinElement = document.getElementById('coinCountNav');
-        if (coinElement) {
-            coinElement.textContent = coins.toLocaleString();
-        }
-    }
-    
     // Update profile avatar preview in navigation
     function updateNavAvatar() {
         let currentAvatar = localStorage.getItem('mathQuest_avatar') || 'default';
@@ -127,16 +87,13 @@
     // Initialize
     function initNav() {
         updateNavAvatar();
-        loadCoinsFromServer();
     }
     
     initNav();
-    setInterval(loadCoinsFromServer, 10000);
     
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
             updateNavAvatar();
-            loadCoinsFromServer();
         }
     });
     
@@ -144,12 +101,6 @@
         if (e.key === 'mathQuest_avatar' || e.key === 'mathQuest_frame') {
             updateNavAvatar();
         }
-        if (e.key === 'mathQuest_coins') {
-            updateNavCoinsDisplay(parseInt(e.newValue || '0', 10));
-        }
     });
 })();
 </script>
-
-<!-- Coin Sync Script -->
-<script src="/js/coin_sync.js"></script>
