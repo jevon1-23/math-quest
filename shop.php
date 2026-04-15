@@ -120,6 +120,27 @@ class MathQuestShop {
         if (navCoin) navCoin.textContent = data.coins.toLocaleString();
         document.getElementById('shopCoinTotal').textContent = data.coins.toLocaleString();
     }
+
+    syncCoinsToServer(delta) {
+        if (!delta || delta === 0) return;
+        fetch('/update-coins.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ delta: delta })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                localStorage.setItem('mathQuest_coins', data.coins);
+                const navCoin = document.getElementById('coinCountNav');
+                if (navCoin) navCoin.textContent = data.coins.toLocaleString();
+                const shopTotal = document.getElementById('shopCoinTotal');
+                if (shopTotal) shopTotal.textContent = data.coins.toLocaleString();
+            }
+        })
+        .catch(err => console.error('Coin sync error:', err));
+    }
     
     showMessage(text, isError = false) {
         const msgDiv = document.getElementById('message');
@@ -139,6 +160,7 @@ class MathQuestShop {
         if (type === 'avatars') data.currentAvatar = id;
         if (type === 'frames') data.currentFrame = id;
         this.saveData(data);
+        this.syncCoinsToServer(-price);
         this.showMessage(`🎉 Purchased ${this.items[type][id].name}!`, false);
         this.render();
         return true;
@@ -164,6 +186,7 @@ class MathQuestShop {
         inventory[id] = (inventory[id] || 0) + 1;
         localStorage.setItem('mathQuest_powerups', JSON.stringify(inventory));
         this.saveData(data);
+        this.syncCoinsToServer(-price);
         this.showMessage(`🎉 Purchased ${this.items.powerups[id].name}! Use it in-game.`, false);
         this.render();
         return true;

@@ -34,7 +34,7 @@ $userStats = getUserStats($_SESSION['user_id'] ?? 0);
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-icon">🪙</div>
-            <div class="stat-value" id="profileCoins"><?php echo number_format($_SESSION['user_coins'] ?? 0); ?></div>
+            <div class="stat-value" id="profileCoins">0</div>
             <div class="stat-label">Total Coins</div>
         </div>
         <div class="stat-card">

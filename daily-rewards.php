@@ -263,6 +263,7 @@ class DailyRewardsSystem {
         let currentCoins = parseInt(localStorage.getItem('mathQuest_coins') || '0', 10);
         currentCoins += reward.coins;
         localStorage.setItem('mathQuest_coins', currentCoins);
+        this.syncCoinsToServer(reward.coins);
         
         this.claimedDays.push(reward.day);
         this.saveData();
@@ -344,6 +345,7 @@ class DailyRewardsSystem {
             }
             currentCoins -= 500;
             localStorage.setItem('mathQuest_coins', currentCoins);
+            this.syncCoinsToServer(-500);
             this.updateNavCoins();
         }
         
@@ -442,6 +444,7 @@ class DailyRewardsSystem {
                     currentCoins += selected.coins;
                     localStorage.setItem('mathQuest_coins', currentCoins);
                     prizeAmount = selected.coins;
+                    this.syncCoinsToServer(selected.coins);
                 } else if (selected.theme) {
                     let unlockedThemes = JSON.parse(localStorage.getItem('mathQuest_unlockedThemes') || '["default"]');
                     if (!unlockedThemes.includes(selected.theme)) {
@@ -454,6 +457,7 @@ class DailyRewardsSystem {
                         localStorage.setItem('mathQuest_coins', currentCoins);
                         prizeAmount = 250;
                         selected = { name: selected.name + ' (Already had - 250 coins)', coins: 250, icon: '🪙' };
+                        this.syncCoinsToServer(250);
                     }
                 } else if (selected.powerup) {
                     let inventory = JSON.parse(localStorage.getItem('mathQuest_powerups') || '{}');
@@ -478,6 +482,24 @@ class DailyRewardsSystem {
         requestAnimationFrame(animateSpin.bind(this));
     }
     
+    syncCoinsToServer(delta) {
+        if (!delta || delta === 0) return;
+        fetch('/update-coins.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ delta: delta })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                localStorage.setItem('mathQuest_coins', data.coins);
+                this.updateNavCoins();
+            }
+        })
+        .catch(err => console.error('Coin sync error:', err));
+    }
+
     updateNavCoins() {
         const coins = localStorage.getItem('mathQuest_coins') || '0';
         const navCoin = document.getElementById('coinCountNav');
