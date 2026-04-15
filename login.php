@@ -44,13 +44,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['role']    = $user['role'];
+            $_SESSION['username'] = $user['username'];
 
             // Clear rate limit on success
             unset($_SESSION[$attemptKey], $_SESSION[$timeKey]);
 
             $redirect = $_SESSION['redirect_after_login'] ?? 'index.php';
             unset($_SESSION['redirect_after_login']);
-            header("Location: " . $redirect);
+            
+            // IMPORTANT: Clear localStorage before redirecting
+            echo "<script>
+                // Clear all Math Quest localStorage data
+                localStorage.clear();
+                // Redirect to home page
+                window.location.href = '" . $redirect . "';
+            </script>";
             exit;
         } else {
             $error = "Invalid username or password";
@@ -66,6 +74,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Math Quest</title>
     <link rel="stylesheet" href="style.css">
+    <script>
+        // Also clear localStorage when the login page loads (for good measure)
+        if (window.localStorage) {
+            localStorage.clear();
+        }
+    </script>
 </head>
 <body>
 
