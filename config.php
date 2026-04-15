@@ -1,5 +1,5 @@
 <?php
-// config.php - SQLite Database configuration for Render Free Tier
+// config.php - Supabase PostgreSQL configuration
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
@@ -22,30 +22,34 @@ define('COINS_PER_CORRECT_ANSWER', 10);
 define('COINS_PER_STAR', 50);
 define('FREE_SPIN_COOLDOWN_HOURS', 24);
 
-// Database connection with error handling (SQLite version)
+// Supabase Database Configuration
+define('DB_HOST', 'db.ebprinvbcgwuelefdqkz.supabase.co');
+define('DB_PORT', '5432');
+define('DB_NAME', 'postgres');
+define('DB_USER', 'postgres');
+define('DB_PASS', 'Jevon.andrews22');
+
+// Database connection with error handling (PostgreSQL version)
 function getDB() {
     static $pdo = null;
     
     if ($pdo === null) {
         try {
-            // Database path - using /tmp for Render free tier (writable)
-            $dbPath = '/tmp/mathquest.db';
+            // PostgreSQL DSN with SSL
+            $dsn = "pgsql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";sslmode=require";
+            $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false
+            ]);
             
-            // Alternative: use project directory (might have permission issues)
-            // $dbPath = __DIR__ . '/database/mathquest.db';
+            // Set timezone
+            $pdo->exec("SET TIME ZONE 'UTC'");
             
-            // Create connection
-            $pdo = new PDO("sqlite:" . $dbPath);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-            
-            // Enable foreign keys
-            $pdo->exec("PRAGMA foreign_keys = ON");
-            
-            // Create tables if they don't exist
+            // Create tables if they don't exist (PostgreSQL syntax)
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     username TEXT UNIQUE NOT NULL,
                     email TEXT UNIQUE NOT NULL,
                     password TEXT NOT NULL,
@@ -59,51 +63,42 @@ function getDB() {
                 );
                 
                 CREATE TABLE IF NOT EXISTS user_progress (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     skill TEXT NOT NULL,
                     level INTEGER NOT NULL,
                     score INTEGER DEFAULT 0,
                     stars INTEGER DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                     UNIQUE(user_id, skill, level)
                 );
                 
                 CREATE TABLE IF NOT EXISTS user_unlocks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     item_type TEXT NOT NULL,
                     item_id TEXT NOT NULL,
                     unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(user_id, item_type, item_id),
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                    UNIQUE(user_id, item_type, item_id)
                 );
                 
                 CREATE TABLE IF NOT EXISTS user_achievements (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     achievement_id TEXT NOT NULL,
                     earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(user_id, achievement_id),
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                    UNIQUE(user_id, achievement_id)
                 );
                 
                 CREATE TABLE IF NOT EXISTS user_activity (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     action TEXT NOT NULL,
                     details TEXT,
                     ip_address TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
-                
-                CREATE INDEX IF NOT EXISTS idx_user_progress_user ON user_progress(user_id);
-                CREATE INDEX IF NOT EXISTS idx_user_progress_skill ON user_progress(skill);
-                CREATE INDEX IF NOT EXISTS idx_user_activity_user ON user_activity(user_id);
-                CREATE INDEX IF NOT EXISTS idx_user_activity_created ON user_activity(created_at);
             ");
             
         } catch(PDOException $e) {
@@ -253,26 +248,17 @@ function saveGameProgress($user_id, $skill, $level, $score, $stars, $coins_earne
     try {
         $pdo = getDB();
         
-        $stmt = $pdo->prepare("SELECT id FROM user_progress WHERE user_id = ? AND skill = ? AND level = ?");
-        $stmt->execute([$user_id, $skill, $level]);
-        $exists = $stmt->fetch();
+        $stmt = $pdo->prepare("
+            INSERT INTO user_progress (user_id, skill, level, score, stars, updated_at) 
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id, skill, level) 
+            DO UPDATE SET 
+                score = EXCLUDED.score,
+                stars = EXCLUDED.stars,
+                updated_at = CURRENT_TIMESTAMP
+        ");
+        return $stmt->execute([$user_id, $skill, $level, $score, $stars]);
         
-        if ($exists) {
-            $stmt = $pdo->prepare("
-                UPDATE user_progress 
-                SET score = MAX(score, ?), 
-                    stars = MAX(stars, ?), 
-                    updated_at = CURRENT_TIMESTAMP 
-                WHERE user_id = ? AND skill = ? AND level = ?
-            ");
-            return $stmt->execute([$score, $stars, $user_id, $skill, $level]);
-        } else {
-            $stmt = $pdo->prepare("
-                INSERT INTO user_progress (user_id, skill, level, score, stars, created_at) 
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ");
-            return $stmt->execute([$user_id, $skill, $level, $score, $stars]);
-        }
     } catch (PDOException $e) {
         error_log("Failed to save game progress: " . $e->getMessage());
         return false;
@@ -317,7 +303,7 @@ function isLevelUnlocked($user_id, $skill, $level) {
 function addAchievement($user_id, $achievement_id) {
     try {
         $pdo = getDB();
-        $stmt = $pdo->prepare("INSERT INTO user_achievements (user_id, achievement_id, earned_at) VALUES (?, ?, CURRENT_TIMESTAMP)");
+        $stmt = $pdo->prepare("INSERT INTO user_achievements (user_id, achievement_id, earned_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT DO NOTHING");
         return $stmt->execute([$user_id, $achievement_id]);
     } catch (PDOException $e) {
         error_log("Failed to add achievement: " . $e->getMessage());
