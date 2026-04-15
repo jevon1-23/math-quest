@@ -22,14 +22,12 @@ define('COINS_PER_CORRECT_ANSWER', 10);
 define('COINS_PER_STAR', 50);
 define('FREE_SPIN_COOLDOWN_HOURS', 24);
 
-// Supabase Database Configuration
-// Using Session Pooler (port 5432) — required for PHP/PDO on Render (no IPv6)
-// IMPORTANT: Pooler username must include the project ref appended with a dot
+// Supabase Database Configuration (Session Pooler — required for IPv4 on Render)
 define('DB_HOST', 'aws-0-us-east-1.pooler.supabase.com');
 define('DB_PORT', '5432');
 define('DB_NAME', 'postgres');
-define('DB_USER', 'postgres.ebprinvbcgwuelefdqkz');  // ← project ref appended
-define('DB_PASS', 'Jevon.andrews22');
+define('DB_USER', 'postgres.ebprinvbcgwuelefdqkz');
+define('DB_PASS', 'MathQuest2026');
 
 // Database connection with error handling (PostgreSQL version)
 function getDB() {
@@ -111,9 +109,6 @@ function getDB() {
     
     return $pdo;
 }
-
-// The rest of your functions remain exactly the same...
-// (all the functions from isLoggedIn() to getLeaderboard() stay as they are)
 
 // Check if user is logged in
 function isLoggedIn() {
