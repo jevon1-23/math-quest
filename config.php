@@ -22,11 +22,13 @@ define('COINS_PER_CORRECT_ANSWER', 10);
 define('COINS_PER_STAR', 50);
 define('FREE_SPIN_COOLDOWN_HOURS', 24);
 
-// Supabase Database Configuration - FIXED: Using connection pooler for IPv4
-define('DB_HOST', 'aws-0-us-east-1.pooler.supabase.com');  // ← THIS IS THE FIX
+// Supabase Database Configuration
+// Using Session Pooler (port 5432) — required for PHP/PDO on Render (no IPv6)
+// IMPORTANT: Pooler username must include the project ref appended with a dot
+define('DB_HOST', 'aws-0-us-east-1.pooler.supabase.com');
 define('DB_PORT', '5432');
 define('DB_NAME', 'postgres');
-define('DB_USER', 'postgres');
+define('DB_USER', 'postgres.ebprinvbcgwuelefdqkz');  // ← project ref appended
 define('DB_PASS', 'Jevon.andrews22');
 
 // Database connection with error handling (PostgreSQL version)
