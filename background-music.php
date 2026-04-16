@@ -12,8 +12,6 @@
         } else if (window.persistentMusicPlayer.audio.paused) {
             window.persistentMusicPlayer.play();
         }
-        const hint = document.getElementById('musicHint');
-        if (hint) hint.remove();
         return;
     }
 
@@ -57,53 +55,19 @@
 
     function playMusic() {
         if (!musicEnabled) return;
-        audio.play().then(() => {
-            const hint = document.getElementById('musicHint');
-            if (hint) hint.remove();
-        }).catch(() => {
-            // Browser blocked autoplay — show click-to-play hint
-            showMusicHint();
+        audio.play().catch(() => {
+            // Browser blocked autoplay — wait silently for first user interaction
+            const startOnInteraction = () => {
+                if (!musicEnabled) return;
+                audio.play().catch(() => {});
+                document.removeEventListener('click',      startOnInteraction);
+                document.removeEventListener('keydown',    startOnInteraction);
+                document.removeEventListener('touchstart', startOnInteraction);
+            };
+            document.addEventListener('click',      startOnInteraction, { once: true });
+            document.addEventListener('keydown',    startOnInteraction, { once: true });
+            document.addEventListener('touchstart', startOnInteraction, { once: true });
         });
-    }
-
-    function showMusicHint() {
-        if (document.getElementById('musicHint')) return;
-        const hint = document.createElement('div');
-        hint.id = 'musicHint';
-        hint.innerHTML = '🎵 Click anywhere to start music 🎵';
-        hint.style.cssText = `
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            background: linear-gradient(135deg, #ffd700, #c9920a);
-            color: #1a1a2e;
-            padding: 12px 20px;
-            border-radius: 50px;
-            font-family: 'Nunito', sans-serif;
-            font-weight: bold;
-            font-size: 0.9rem;
-            z-index: 10000;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            cursor: pointer;
-        `;
-        hint.onclick = () => {
-            audio.play().then(() => hint.remove()).catch(() => {});
-        };
-        document.body.appendChild(hint);
-
-        // Also start on any user interaction with the page
-        const startOnInteraction = () => {
-            audio.play().then(() => {
-                const h = document.getElementById('musicHint');
-                if (h) h.remove();
-            }).catch(() => {});
-            document.removeEventListener('click',     startOnInteraction);
-            document.removeEventListener('keydown',   startOnInteraction);
-            document.removeEventListener('touchstart', startOnInteraction);
-        };
-        document.addEventListener('click',      startOnInteraction, { once: true });
-        document.addEventListener('keydown',    startOnInteraction, { once: true });
-        document.addEventListener('touchstart', startOnInteraction, { once: true });
     }
 
     // Loop: when a track ends, play the next one
