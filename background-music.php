@@ -2,11 +2,9 @@
 // background-music.php - Persistent background music player
 ?>
 <script>
-// Persistent Background Music Player - Music continues across all pages
 (function() {
-    // Check if music player already exists globally
     if (window.persistentMusicPlayer) {
-        const musicEnabled = localStorage.getItem('mq_music') !== 'false'; // default ON
+        const musicEnabled = localStorage.getItem('mq_music') !== 'false';
         if (!musicEnabled) {
             window.persistentMusicPlayer.pause();
         } else if (window.persistentMusicPlayer.audio.paused) {
@@ -25,68 +23,77 @@
 
     const audio  = new Audio();
     audio.loop   = false;
+    audio.preload = 'auto';
 
-    // Default music ON unless user explicitly turned it off
     let musicEnabled = localStorage.getItem('mq_music') !== 'false';
 
     const savedVolume = localStorage.getItem('bgMusicVolume');
     audio.volume = savedVolume ? parseInt(savedVolume) / 100 : 0.5;
 
-    function loadTrack(index) {
+    function loadTrack(index, resumeTime) {
         if (index >= playlist.length) index = 0;
         if (index < 0) index = playlist.length - 1;
         currentTrackIndex = index;
         audio.src = playlist[index].file;
         localStorage.setItem('currentTrackIndex', currentTrackIndex);
-        if (currentTime > 0) {
-            audio.addEventListener('loadedmetadata', function onMeta() {
-                if (currentTime < audio.duration) audio.currentTime = currentTime;
-                audio.removeEventListener('loadedmetadata', onMeta);
+
+        if (resumeTime > 0) {
+            audio.addEventListener('canplay', function onCanPlay() {
+                audio.currentTime = resumeTime;
+                audio.removeEventListener('canplay', onCanPlay);
+                if (musicEnabled) audio.play().catch(() => waitForInteraction());
             });
+        } else {
+            if (musicEnabled) {
+                audio.addEventListener('canplay', function onCanPlay() {
+                    audio.removeEventListener('canplay', onCanPlay);
+                    audio.play().catch(() => waitForInteraction());
+                });
+            }
         }
     }
 
     function nextTrack() {
         currentTime = 0;
         currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-        loadTrack(currentTrackIndex);
-        if (musicEnabled) audio.play().catch(() => {});
+        localStorage.setItem('currentTrackIndex', currentTrackIndex);
+        localStorage.setItem('currentMusicTime', '0');
+        loadTrack(currentTrackIndex, 0);
+    }
+
+    function waitForInteraction() {
+        const startOnInteraction = () => {
+            if (!musicEnabled) return;
+            audio.play().catch(() => {});
+            document.removeEventListener('click',      startOnInteraction);
+            document.removeEventListener('keydown',    startOnInteraction);
+            document.removeEventListener('touchstart', startOnInteraction);
+        };
+        document.addEventListener('click',      startOnInteraction, { once: true });
+        document.addEventListener('keydown',    startOnInteraction, { once: true });
+        document.addEventListener('touchstart', startOnInteraction, { once: true });
     }
 
     function playMusic() {
         if (!musicEnabled) return;
-        audio.play().catch(() => {
-            // Browser blocked autoplay — wait silently for first user interaction
-            const startOnInteraction = () => {
-                if (!musicEnabled) return;
-                audio.play().catch(() => {});
-                document.removeEventListener('click',      startOnInteraction);
-                document.removeEventListener('keydown',    startOnInteraction);
-                document.removeEventListener('touchstart', startOnInteraction);
-            };
-            document.addEventListener('click',      startOnInteraction, { once: true });
-            document.addEventListener('keydown',    startOnInteraction, { once: true });
-            document.addEventListener('touchstart', startOnInteraction, { once: true });
-        });
+        audio.play().catch(() => waitForInteraction());
     }
 
-    // Loop: when a track ends, play the next one
-    audio.addEventListener('ended', () => {
-        currentTime = 0;
-        nextTrack();
-    });
+    audio.addEventListener('ended', () => nextTrack());
 
-    // Save position periodically and on unload
+    // Save position every second for smooth resume
     setInterval(() => {
-        if (!isNaN(audio.currentTime) && audio.currentTime > 0)
+        if (!isNaN(audio.currentTime) && audio.currentTime > 0) {
             localStorage.setItem('currentMusicTime', audio.currentTime);
-    }, 5000);
+        }
+    }, 1000);
+
     window.addEventListener('beforeunload', () => {
-        if (!isNaN(audio.currentTime))
+        if (!isNaN(audio.currentTime)) {
             localStorage.setItem('currentMusicTime', audio.currentTime);
+        }
     });
 
-    // React to settings changes (e.g. user toggles music in Settings page)
     window.addEventListener('storage', (e) => {
         if (e.key === 'mq_music') {
             musicEnabled = e.newValue !== 'false';
@@ -97,11 +104,9 @@
         }
     });
 
-    // Load and start
-    loadTrack(currentTrackIndex);
-    playMusic();
+    // Load and resume from saved position
+    loadTrack(currentTrackIndex, currentTime);
 
-    // Expose global controls
     window.persistentMusicPlayer = {
         audio,
         play:            playMusic,
@@ -112,6 +117,6 @@
         getCurrentTrack: () => playlist[currentTrackIndex],
     };
 
-    console.log('🎵 Music Player ready — plays on repeat by default');
+    console.log('🎵 Music Player ready');
 })();
 </script>
