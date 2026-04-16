@@ -78,6 +78,105 @@ $isBeginner = $skill === 'beginner';
             border-radius: 12px;
             font-size: 0.7rem;
         }
+
+        /* Colorful Calculator Styles */
+        #calcPanel {
+            background: linear-gradient(135deg, #1a1a2e, #16213e) !important;
+            border-radius: 20px !important;
+            padding: 15px !important;
+            margin-top: 20px !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+        }
+
+        #calcPanel .calc-title {
+            text-align: center !important;
+            color: #ffd700 !important;
+            font-size: 1.3rem !important;
+            font-weight: bold !important;
+            margin-bottom: 15px !important;
+        }
+
+        #calcPanel .calc-display {
+            background: #0f0f1a !important;
+            border-radius: 12px !important;
+            padding: 15px !important;
+            margin-bottom: 15px !important;
+            border: 1px solid rgba(255,215,0,0.3) !important;
+        }
+
+        #calcPanel .calc-expr {
+            color: #888 !important;
+            font-size: 0.85rem !important;
+            min-height: 25px !important;
+            text-align: right !important;
+            font-family: monospace !important;
+        }
+
+        #calcPanel .calc-val {
+            color: #ffd700 !important;
+            font-size: 1.8rem !important;
+            font-weight: bold !important;
+            text-align: right !important;
+            font-family: monospace !important;
+        }
+
+        #calcPanel .calc-row {
+            display: grid !important;
+            gap: 8px !important;
+            margin-bottom: 8px !important;
+        }
+
+        #calcPanel .calc-btn {
+            border: none !important;
+            border-radius: 10px !important;
+            padding: 12px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            font-size: 0.9rem !important;
+        }
+
+        #calcPanel .calc-btn:active {
+            transform: scale(0.95) !important;
+        }
+
+        #calcPanel .cb-fn {
+            background: linear-gradient(135deg, #8e44ad, #6c3483) !important;
+            color: white !important;
+        }
+
+        #calcPanel .cb-clr {
+            background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+            color: white !important;
+        }
+
+        #calcPanel .cb-del {
+            background: linear-gradient(135deg, #f1c40f, #d4ac0d) !important;
+            color: #1a1a2e !important;
+        }
+
+        #calcPanel .cb-op {
+            background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+            color: white !important;
+        }
+
+        #calcPanel .cb-num {
+            background: linear-gradient(135deg, #2d3561, #1a1f3a) !important;
+            color: white !important;
+        }
+
+        #calcPanel .cb-eq {
+            background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+            color: white !important;
+        }
+
+        #calcPanel #angleToggle {
+            background: linear-gradient(135deg, #3498db, #2980b9) !important;
+            color: white !important;
+            width: 100% !important;
+            padding: 10px !important;
+            margin-top: 10px !important;
+        }
     </style>
     <script>
         window.currentUserId = '<?php echo $_SESSION['user_id'] ?? 'guest'; ?>';
@@ -114,11 +213,11 @@ $isBeginner = $skill === 'beginner';
     </div>
 
     <div id="calcPanel">
-        <div class="calc-title">🧮 Calculator</div>
+        <div class="calc-title">🧮 Scientific Calculator</div>
 
         <div class="calc-display" id="calcDisplay">
-            <span class="calc-expr" id="calcExpr"></span>
-            <span class="calc-val" id="calcVal">0</span>
+            <div class="calc-expr" id="calcExpr"></div>
+            <div class="calc-val" id="calcVal">0</div>
         </div>
 
         <div class="calc-row" style="grid-template-columns:repeat(4,1fr)">
@@ -161,13 +260,13 @@ $isBeginner = $skill === 'beginner';
         <div class="calc-row" style="grid-template-columns:repeat(4,1fr)">
             <button class="calc-btn cb-num" onclick="calcInput('0')">0</button>
             <button class="calc-btn cb-num" onclick="calcInput('.')">.</button>
-            <button class="calc-btn cb-op"  onclick="calcInput('+')">+</button>
             <button class="calc-btn cb-eq"  onclick="calcEquals()">=</button>
+            <button class="calc-btn cb-op"  onclick="calcInput('+')">+</button>
         </div>
 
         <div style="text-align:center; margin-top:4px;">
-            <button class="calc-btn cb-fn" id="angleToggle" onclick="calcToggleAngle()" style="width:100%;font-size:0.72rem;">
-                Mode: DEG
+            <button class="calc-btn" id="angleToggle" onclick="calcToggleAngle()" style="width:100%;font-size:0.8rem;">
+                📐 Mode: DEG
             </button>
         </div>
     </div>
@@ -216,7 +315,6 @@ class PowerupSystem {
     }
 
     _loadInventory() {
-        // Load from localStorage (where shop saves power-ups)
         const saved = localStorage.getItem('mathQuest_powerups');
         if (saved) {
             try {
@@ -229,7 +327,6 @@ class PowerupSystem {
             } catch(e) {}
         }
         
-        // Also check individual power-up items from shop
         const shieldCount = localStorage.getItem('powerup_shield');
         const freezeCount = localStorage.getItem('powerup_freeze');
         const skipCount = localStorage.getItem('powerup_skip');
@@ -240,7 +337,6 @@ class PowerupSystem {
         if (skipCount) this.powerups.skip.count += parseInt(skipCount) || 0;
         if (doublePointsCount) this.powerups.doublePoints.count += parseInt(doublePointsCount) || 0;
         
-        // Clean up individual items after loading
         localStorage.removeItem('powerup_shield');
         localStorage.removeItem('powerup_freeze');
         localStorage.removeItem('powerup_skip');
@@ -412,7 +508,6 @@ class PowerupSystem {
         if (!powerupBar) {
             const gameCard = document.getElementById('gameCard');
             if (gameCard) {
-                // Find the coin-bar or insert at top of game card
                 const existingBar = gameCard.querySelector('.powerup-bar');
                 if (existingBar) return;
                 
@@ -420,7 +515,6 @@ class PowerupSystem {
                 powerupBar.id = 'powerupBar';
                 powerupBar.className = 'powerup-bar';
                 
-                // Insert after coin-bar or at beginning
                 const coinBar = gameCard.querySelector('.coin-bar');
                 if (coinBar) {
                     coinBar.insertAdjacentElement('afterend', powerupBar);
@@ -506,7 +600,7 @@ function calcFn(fn) {
 function calcToggleAngle() {
     calcAngleDeg = !calcAngleDeg;
     const toggle = document.getElementById('angleToggle');
-    if (toggle) toggle.textContent = 'Mode: ' + (calcAngleDeg ? 'DEG' : 'RAD');
+    if (toggle) toggle.textContent = '📐 Mode: ' + (calcAngleDeg ? 'DEG' : 'RAD');
 }
 
 function safeMathParse(raw) {
@@ -702,19 +796,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lb && window.innerWidth > 899) lb.style.display = '';
     lbRender();
     
-    // Initialize power-up system when game is ready
     const checkGameInterval = setInterval(() => {
         if (typeof window.game !== 'undefined' && window.game && !window.powerupSystem) {
             window.powerupSystem = new PowerupSystem(window.game);
             
-            // Force add power-up bar
             setTimeout(() => {
                 if (window.powerupSystem) {
                     window.powerupSystem._renderPowerupBar();
                 }
             }, 500);
             
-            // Also render when level starts
             const originalStartLevel = window.game.startLevel;
             window.game.startLevel = function(level) {
                 originalStartLevel.call(this, level);
@@ -725,7 +816,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 100);
             };
             
-            // Modify checkAnswer for freeze and shield
             const originalCheckAnswer = window.game.checkAnswer;
             window.game.checkAnswer = function(choice) {
                 if (window.powerupSystem && window.powerupSystem.isFrozen()) {
