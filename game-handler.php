@@ -79,103 +79,118 @@ $isBeginner = $skill === 'beginner';
             font-size: 0.7rem;
         }
 
-        /* Colorful Calculator Styles */
+        /* Colorful Calculator Styles - No Flash */
         #calcPanel {
-            background: linear-gradient(135deg, #1a1a2e, #16213e) !important;
-            border-radius: 20px !important;
-            padding: 15px !important;
-            margin-top: 20px !important;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 20px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: none !important;
+            will-change: auto;
+        }
+
+        #calcPanel.calc-hidden {
+            display: none !important;
+        }
+
+        #calcPanel.calc-visible {
+            display: block !important;
         }
 
         #calcPanel .calc-title {
-            text-align: center !important;
-            color: #ffd700 !important;
-            font-size: 1.3rem !important;
-            font-weight: bold !important;
-            margin-bottom: 15px !important;
+            text-align: center;
+            color: #ffd700;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
         }
 
         #calcPanel .calc-display {
-            background: #0f0f1a !important;
-            border-radius: 12px !important;
-            padding: 15px !important;
-            margin-bottom: 15px !important;
-            border: 1px solid rgba(255,215,0,0.3) !important;
+            background: #0f0f1a;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,215,0,0.3);
         }
 
         #calcPanel .calc-expr {
-            color: #888 !important;
-            font-size: 0.85rem !important;
-            min-height: 25px !important;
-            text-align: right !important;
-            font-family: monospace !important;
+            color: #888;
+            font-size: 0.85rem;
+            min-height: 25px;
+            text-align: right;
+            font-family: monospace;
         }
 
         #calcPanel .calc-val {
-            color: #ffd700 !important;
-            font-size: 1.8rem !important;
-            font-weight: bold !important;
-            text-align: right !important;
-            font-family: monospace !important;
+            color: #ffd700;
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-align: right;
+            font-family: monospace;
         }
 
         #calcPanel .calc-row {
-            display: grid !important;
-            gap: 8px !important;
-            margin-bottom: 8px !important;
+            display: grid;
+            gap: 8px;
+            margin-bottom: 8px;
         }
 
         #calcPanel .calc-btn {
-            border: none !important;
-            border-radius: 10px !important;
-            padding: 12px !important;
-            font-weight: bold !important;
-            cursor: pointer !important;
-            transition: all 0.2s ease !important;
-            font-size: 0.9rem !important;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
         }
 
         #calcPanel .calc-btn:active {
-            transform: scale(0.95) !important;
+            transform: scale(0.95);
         }
 
         #calcPanel .cb-fn {
-            background: linear-gradient(135deg, #8e44ad, #6c3483) !important;
-            color: white !important;
+            background: linear-gradient(135deg, #8e44ad, #6c3483);
+            color: white;
         }
 
         #calcPanel .cb-clr {
-            background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-            color: white !important;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
         }
 
         #calcPanel .cb-del {
-            background: linear-gradient(135deg, #f1c40f, #d4ac0d) !important;
-            color: #1a1a2e !important;
+            background: linear-gradient(135deg, #f1c40f, #d4ac0d);
+            color: #1a1a2e;
         }
 
         #calcPanel .cb-op {
-            background: linear-gradient(135deg, #f39c12, #e67e22) !important;
-            color: white !important;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
         }
 
         #calcPanel .cb-num {
-            background: linear-gradient(135deg, #2d3561, #1a1f3a) !important;
-            color: white !important;
+            background: linear-gradient(135deg, #2d3561, #1a1f3a);
+            color: white;
         }
 
         #calcPanel .cb-eq {
-            background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
-            color: white !important;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
         }
 
         #calcPanel #angleToggle {
-            background: linear-gradient(135deg, #3498db, #2980b9) !important;
-            color: white !important;
-            width: 100% !important;
-            padding: 10px !important;
-            margin-top: 10px !important;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        /* Smooth game card transitions */
+        #gameCard {
+            transition: opacity 0.15s ease;
         }
     </style>
     <script>
@@ -212,7 +227,7 @@ $isBeginner = $skill === 'beginner';
         <div class="loading">Loading game…</div>
     </div>
 
-    <div id="calcPanel">
+    <div id="calcPanel" class="<?php echo $isBeginner ? 'calc-hidden' : 'calc-visible'; ?>">
         <div class="calc-title">🧮 Scientific Calculator</div>
 
         <div class="calc-display" id="calcDisplay">
@@ -796,6 +811,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lb && window.innerWidth > 899) lb.style.display = '';
     lbRender();
     
+    // Set initial calculator visibility based on skill level
+    const calcPanel = document.getElementById('calcPanel');
+    if (calcPanel) {
+        if (currentSkill === 'beginner') {
+            calcPanel.classList.add('calc-hidden');
+            calcPanel.classList.remove('calc-visible');
+        } else {
+            calcPanel.classList.remove('calc-hidden');
+            calcPanel.classList.add('calc-visible');
+        }
+    }
+    
     const checkGameInterval = setInterval(() => {
         if (typeof window.game !== 'undefined' && window.game && !window.powerupSystem) {
             window.powerupSystem = new PowerupSystem(window.game);
@@ -815,6 +842,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }, 100);
             };
+            
+            // Override the calculator visibility method in BaseGame to prevent flashing
+            const originalRebuildGameCard = window.game._rebuildGameCard;
+            if (originalRebuildGameCard) {
+                window.game._rebuildGameCard = function() {
+                    originalRebuildGameCard.call(this);
+                    // Restore calculator visibility without flashing
+                    const calcPanel = document.getElementById('calcPanel');
+                    if (calcPanel) {
+                        if (currentSkill === 'beginner') {
+                            calcPanel.classList.add('calc-hidden');
+                            calcPanel.classList.remove('calc-visible');
+                        } else {
+                            calcPanel.classList.remove('calc-hidden');
+                            calcPanel.classList.add('calc-visible');
+                        }
+                    }
+                };
+            }
             
             const originalCheckAnswer = window.game.checkAnswer;
             window.game.checkAnswer = function(choice) {
