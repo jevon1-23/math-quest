@@ -1,4 +1,4 @@
-<!-- nav.php - Navigation Bar with Avatar + Coins Display -->
+<!-- nav.php - Navigation Bar with Avatar Preview + Coins Display -->
 <nav class="navbar">
     <a href="index.php" class="logo-link">
         <div class="logo">🎮 Math Quest</div>
@@ -14,9 +14,10 @@
             border: 2px solid rgba(255,215,0,0.4);
             border-radius: 50px;
             padding: 6px 16px;
+            transition: all 0.3s;
         ">
             <span style="font-size:1.2rem;">🪙</span>
-            <span id="coinCountNav" style="color:#ffd700; font-weight:700;">0</span>
+            <span id="coinCountNav" style="color:#ffd700; font-weight:700; font-size:0.95rem;">0</span>
         </div>
 
         <!-- Profile Avatar Button -->
@@ -29,6 +30,7 @@
             border-radius: 50px;
             padding: 4px 12px 4px 4px;
             cursor: pointer;
+            transition: all 0.3s;
         " onclick="window.location.href='profile.php'">
             <div id="navAvatarPreview" style="
                 width: 32px;
@@ -39,6 +41,7 @@
                 align-items: center;
                 justify-content: center;
                 font-size: 1.2rem;
+                transition: all 0.3s;
             ">🧑</div>
             <span style="color: white; font-weight: 600; font-size: 0.85rem;">Profile</span>
         </div>
@@ -50,6 +53,7 @@
             <li><a href="settings.php">⚙️ Settings</a></li>
             <li><a href="play.php">🎮 Play</a></li>
         </ul>
+        
     </div>
 </nav>
 
@@ -57,20 +61,27 @@
 (function() {
     // Avatar emoji mapping
     const avatarEmojis = {
-        'default': '🧑', 'wizard': '🧙', 'knight': '⚔️', 'ninja': '🥷',
-        'pirate': '🏴‍☠️', 'robot': '🤖', 'dragon': '🐉', 'phoenix': '🔥',
-        'unicorn': '🦄', 'viking': '⚡'
+        'default': '🧑',
+        'wizard': '🧙',
+        'knight': '⚔️',
+        'ninja': '🥷',
+        'pirate': '🏴‍☠️',
+        'robot': '🤖',
+        'dragon': '🐉',
+        'phoenix': '🔥',
+        'unicorn': '🦄',
+        'viking': '⚡'
     };
     
     // Frame styles mapping
     const frameStyles = {
-        'gold': '0 0 0 2px #ffd700, 0 0 0 4px #fbbf24',
-        'silver': '0 0 0 2px #c0c0c0, 0 0 0 4px #a0a0a0',
-        'diamond': '0 0 0 2px #b9f2ff, 0 0 0 4px #7fffd4',
-        'ruby': '0 0 0 2px #ff4444, 0 0 0 4px #cc3333'
+        'gold': 'box-shadow: 0 0 0 2px #ffd700, 0 0 0 4px #fbbf24;',
+        'silver': 'box-shadow: 0 0 0 2px #c0c0c0, 0 0 0 4px #a0a0a0;',
+        'diamond': 'box-shadow: 0 0 0 2px #b9f2ff, 0 0 0 4px #7fffd4;',
+        'ruby': 'box-shadow: 0 0 0 2px #ff4444, 0 0 0 4px #cc3333;'
     };
     
-    // Update profile avatar preview
+    // Update profile avatar preview in navigation
     function updateNavAvatar() {
         let currentAvatar = localStorage.getItem('mathQuest_avatar') || 'default';
         let currentFrame = localStorage.getItem('mathQuest_frame');
@@ -89,7 +100,7 @@
     
     // Update coin display
     function updateNavCoins() {
-        const coins = localStorage.getItem('mathQuest_coins') || '0';
+        let coins = localStorage.getItem('mathQuest_coins') || '0';
         const navCoin = document.getElementById('coinCountNav');
         if (navCoin) navCoin.textContent = parseInt(coins).toLocaleString();
     }
@@ -102,7 +113,7 @@
     
     initNav();
     
-    // Keep avatar in sync
+    // Keep avatar in sync when page becomes visible
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
             updateNavAvatar();
@@ -110,7 +121,7 @@
         }
     });
     
-    // Keep coins in sync
+    // Keep both in sync across tabs
     window.addEventListener('storage', (e) => {
         if (e.key === 'mathQuest_avatar' || e.key === 'mathQuest_frame') {
             updateNavAvatar();
@@ -120,7 +131,7 @@
         }
     });
     
-    // Periodic refresh for coins
+    // Periodic refresh for coins (same-tab updates)
     setInterval(updateNavCoins, 2000);
 })();
 </script>
