@@ -23,7 +23,7 @@ define('COINS_PER_STAR', 50);
 define('FREE_SPIN_COOLDOWN_HOURS', 24);
 
 // Supabase Database Configuration (Session Pooler — required for IPv4 on Render)
-define('DB_HOST', 'aws-0-us-east-1.pooler.supabase.com');
+define('DB_HOST', 'aws-1-us-east-1.pooler.supabase.com');
 define('DB_PORT', '5432');
 define('DB_NAME', 'postgres');
 define('DB_USER', 'postgres.ebprinvbcgwuelefdqkz');
