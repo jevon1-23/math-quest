@@ -55,11 +55,6 @@ $user = getCurrentUser();
             border-bottom: none;
         }
         
-        /* Changed text color to black */
-        .settings-row span {
-            color: #000000;
-        }
-        
         .toggle {
             position: relative;
             display: inline-block;
@@ -110,11 +105,6 @@ $user = getCurrentUser();
             margin: 0 10px;
         }
         
-        /* Changed volume text to black */
-        #volumeValue {
-            color: #000000;
-        }
-        
         .btn {
             display: inline-block;
             padding: 12px 24px;
@@ -141,17 +131,15 @@ $user = getCurrentUser();
             border-radius: 15px;
         }
         
-        /* Changed logistics panel text to black */
-        #logisticsPanel p,
-        #logisticsPanel li,
-        #logisticsPanel h4 {
-            color: #000000;
+        /* ONLY About section text changed to white */
+        #logisticsPanel,
+        #logisticsPanel * {
+            color: #ffffff !important;
         }
         
+        /* Keep gold color for headings inside about section */
         #logisticsPanel h4 {
-            color: #000000;
-            margin-top: 20px;
-            margin-bottom: 10px;
+            color: #ffd700 !important;
         }
         
         #logisticsPanel ul {
@@ -195,14 +183,9 @@ $user = getCurrentUser();
             box-shadow: 0 5px 15px rgba(244,67,54,0.4);
         }
         
-        /* Changed back-home link color */
-        .back-home .btn {
-            color: white;
-        }
-        
-        /* Changed paragraph text in settings-section to black */
-        .settings-section p {
-            color: #000000;
+        .back-home {
+            text-align: center;
+            margin-top: 20px;
         }
         
         @media (max-width: 600px) {
@@ -227,7 +210,7 @@ $user = getCurrentUser();
 <?php include 'nav.php'; ?>
 
 <div class="settings-container">
-    <h1 style="text-align: center; color: white;">⚙️ Settings</h1>
+    <h1 style="text-align: center;">⚙️ Settings</h1>
 
     <!-- Sound settings -->
     <div class="settings-section">
@@ -298,7 +281,7 @@ $user = getCurrentUser();
             <form action="logout.php" method="POST">
                 <button type="submit">🚪 Logout</button>
             </form>
-            <p style="margin-top: 10px;">Log out of your Math Quest account</p>
+            <p style="margin-top: 10px; color: rgba(255,255,255,0.7);">Log out of your Math Quest account</p>
         </div>
     </div>
 
