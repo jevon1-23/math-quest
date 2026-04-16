@@ -34,7 +34,11 @@ $isBeginner = $skill === 'beginner';
     <link rel="stylesheet" href="style.css?v=2">
     <script>
         window.currentUserId = '<?php echo $_SESSION['user_id'] ?? 'guest'; ?>';
+        window.currentUsername = '<?php echo addslashes($_SESSION['user_name'] ?? ''); ?>';
         localStorage.setItem('mathQuest_userId', window.currentUserId);
+        if (window.currentUsername) {
+            localStorage.setItem('mathQuest_playerName_' + window.currentUserId, window.currentUsername);
+        }
     </script>
 </head>
 <body>
@@ -48,7 +52,7 @@ $isBeginner = $skill === 'beginner';
             <h3>🏆 Leaderboard</h3>
             <div class="lb-subtitle"><?php echo htmlspecialchars($modeName); ?></div>
         </div>
-        <div class="lb-name-section">
+        <div class="lb-name-section" style="display:none;">
             <input type="text" id="lbNameInput" placeholder="Your name…" maxlength="16"/>
             <button onclick="lbSetName()">Save</button>
         </div>

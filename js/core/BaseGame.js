@@ -285,7 +285,7 @@ class BaseGame {
                 <div class="map-top-row">
                     <h3>${this.gameName}</h3>
                     <span class="map-coin-display">🪙 <span id="coinCountMap">${this.coins.toLocaleString()}</span></span>
-                    <a href="/math-game/game-selector.php?skill=${this.skillLevel}" class="map-back-btn">🔙 Back</a>
+                    <a href="/game-selector.php?skill=${this.skillLevel}" class="map-back-btn">🔙 Back</a>
                 </div>
                 <div id="mapScroll">
                     <svg viewBox="0 0 320 900" width="100%">
@@ -358,7 +358,7 @@ class BaseGame {
             <div class="game-controls">
                 <button onclick="game.showLevelSelection()" class="control-btn">📋 Levels</button>
                 <button onclick="game.toggleSound()" id="soundToggle" class="control-btn">🔊 Sound</button>
-                <a href="/math-game/play.php" class="control-btn">🏠 Menu</a>
+                <a href="/play.php" class="control-btn">🏠 Menu</a>
             </div>
             <div id="achievements" class="achievement-popup" style="display:none;"></div>
         `;
@@ -696,7 +696,7 @@ class BaseGame {
                     : ''}
                 <button onclick="game.redoLevel(${lvl})" class="redo-btn">🔄 Redo</button>
                 <button onclick="game.showLevelSelection()" class="choose-btn">📋 Levels</button>
-                <a href="/math-game/play.php" class="menu-btn">🏠 Menu</a>
+                <a href="/play.php" class="menu-btn">🏠 Menu</a>
             </div>
         `;
         
