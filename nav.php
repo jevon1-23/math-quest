@@ -49,7 +49,6 @@
         <ul class="nav-links">
             <li><a href="index.php">🏠 Home</a></li>
             <li><a href="shop.php">🛒 Shop</a></li>
-            <li><a href="profile.php">👤 Profile</a></li>
             <li><a href="settings.php">⚙️ Settings</a></li>
             <li><a href="play.php">🎮 Play</a></li>
         </ul>
