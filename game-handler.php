@@ -32,6 +32,50 @@ $isBeginner = $skill === 'beginner';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Quest — <?php echo htmlspecialchars($modeName); ?></title>
     <link rel="stylesheet" href="style.css?v=2">
+    <style>
+        /* Power-up bar styles */
+        .powerup-bar {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .pu-btn {
+            background: linear-gradient(135deg, #4a5568, #2d3748);
+            border: none;
+            border-radius: 25px;
+            padding: 8px 16px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+        }
+        .pu-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #5a6578, #3d4758);
+        }
+        .pu-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pu-count {
+            background: rgba(0,0,0,0.5);
+            border-radius: 12px;
+            padding: 2px 6px;
+            margin-left: 6px;
+            font-size: 0.7rem;
+        }
+        .pu-active {
+            background: #48bb78;
+            color: white;
+            margin-left: 6px;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }
+    </style>
     <script>
         window.currentUserId = '<?php echo $_SESSION['user_id'] ?? 'guest'; ?>';
         window.currentUsername = '<?php echo addslashes($_SESSION['user_name'] ?? ''); ?>';
@@ -149,6 +193,247 @@ if (!preg_match('/^[a-z\-]+\/[a-z\-]+\.js$/', $jsFile)) {
 <script src="<?php echo htmlspecialchars($jsFile); ?>"></script>
 
 <script>
+// ============================================
+// POWER-UP SYSTEM (Built directly into game)
+// ============================================
+
+class PowerupSystem {
+    constructor(gameInstance) {
+        this.game = gameInstance;
+        this.powerups = {
+            shield: { count: 3, active: false, cost: 200 },      // Start with 3 shields
+            freeze: { count: 2, active: false, cost: 150 },      // Start with 2 freezes
+            skip: { count: 3, active: false, cost: 100 },        // Start with 3 skips
+            doublePoints: { count: 1, active: false, cost: 250 }  // Start with 1 double points
+        };
+        this.freezeTimer = null;
+        this.doublePointsActive = false;
+        this.originalBaseScore = 10;
+        this._loadInventory();
+    }
+
+    _loadInventory() {
+        const saved = localStorage.getItem('mathQuest_powerups');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                Object.keys(this.powerups).forEach(key => {
+                    if (data[key] !== undefined) {
+                        this.powerups[key].count = data[key];
+                    }
+                });
+            } catch(e) {}
+        }
+    }
+
+    _saveInventory() {
+        const saveData = {};
+        Object.keys(this.powerups).forEach(key => {
+            saveData[key] = this.powerups[key].count;
+        });
+        localStorage.setItem('mathQuest_powerups', JSON.stringify(saveData));
+    }
+
+    addPowerup(type, amount = 1) {
+        if (this.powerups[type]) {
+            this.powerups[type].count += amount;
+            this._saveInventory();
+            this._renderPowerupBar();
+            if (this.game) this.game._showAchievement(`🎁 +${amount} ${type} power-up!`);
+            return true;
+        }
+        return false;
+    }
+
+    getCount(type) {
+        return this.powerups[type]?.count || 0;
+    }
+
+    usePowerup(type) {
+        if (!this.powerups[type] || this.powerups[type].count <= 0) {
+            if (this.game) this.game._showAchievement(`❌ No ${type} power-ups left! Buy in Shop.`);
+            return false;
+        }
+
+        switch(type) {
+            case 'shield':
+                this._activateShield();
+                break;
+            case 'freeze':
+                this._activateFreeze();
+                break;
+            case 'skip':
+                this._activateSkip();
+                break;
+            case 'doublePoints':
+                this._activateDoublePoints();
+                break;
+            default:
+                return false;
+        }
+
+        this.powerups[type].count--;
+        this._saveInventory();
+        this._renderPowerupBar();
+        return true;
+    }
+
+    _activateShield() {
+        if (this.powerups.shield.active) {
+            if (this.game) this.game._showAchievement('🛡️ Shield already active!');
+            return;
+        }
+        this.powerups.shield.active = true;
+        if (this.game) this.game._showAchievement('🛡️ Shield activated! Next wrong answer blocked.');
+        this._renderPowerupBar();
+        
+        setTimeout(() => {
+            if (this.powerups.shield.active) {
+                this.powerups.shield.active = false;
+                this._renderPowerupBar();
+                if (this.game) this.game._showAchievement('🛡️ Shield expired!');
+            }
+        }, 30000);
+    }
+
+    _activateFreeze() {
+        if (this.powerups.freeze.active) {
+            if (this.game) this.game._showAchievement('⏸️ Timer already frozen!');
+            return;
+        }
+        
+        if (this.game && this.game.timerInterval) {
+            clearInterval(this.game.timerInterval);
+            this.powerups.freeze.active = true;
+            if (this.game) this.game._showAchievement('⏸️ Timer frozen for 10 seconds!');
+            this._renderPowerupBar();
+            
+            this.freezeTimer = setTimeout(() => {
+                this.powerups.freeze.active = false;
+                if (this.game && !this.game.levelCompleted) {
+                    this.game._startTimer();
+                    if (this.game) this.game._showAchievement('▶️ Timer resumed!');
+                }
+                this._renderPowerupBar();
+            }, 10000);
+        }
+    }
+
+    _activateSkip() {
+        if (this.game && this.game.skipUsedThis) {
+            if (this.game) this.game._showAchievement('⏭️ Already skipped this question!');
+            return;
+        }
+        
+        if (this.game) {
+            this.game.skipUsedThis = true;
+            this.game._showAchievement('⏭️ Question skipped — no penalty!');
+            
+            this.game.questionCount++;
+            this.game._updateProgress();
+            
+            if (this.game.questionCount < this.game.questionsPerLevel) {
+                this.game.secondsLeft = this.game.timePerQuestion;
+                this.game.skipUsedThis = false;
+                this.game.hintUsed = false;
+                this.game.generateQuestion();
+            } else {
+                clearInterval(this.game.timerInterval);
+                this.game.levelCompleted = true;
+                this.game._calculateStars();
+                this.game._playStarSound();
+                this.game._showLevelComplete();
+            }
+        }
+    }
+
+    _activateDoublePoints() {
+        if (this.doublePointsActive) {
+            if (this.game) this.game._showAchievement('✨ Double points already active!');
+            return;
+        }
+        
+        this.doublePointsActive = true;
+        if (this.game) {
+            this.originalBaseScore = this.game.baseScore;
+            this.game.baseScore = this.originalBaseScore * 2;
+            this.game._showAchievement('✨ Double points activated for 30 seconds!');
+        }
+        this._renderPowerupBar();
+        
+        setTimeout(() => {
+            this.doublePointsActive = false;
+            if (this.game) this.game.baseScore = this.originalBaseScore;
+            if (this.game) this.game._showAchievement('✨ Double points expired!');
+            this._renderPowerupBar();
+        }, 30000);
+    }
+
+    shouldBlockWrong() {
+        if (this.powerups.shield.active) {
+            this.powerups.shield.active = false;
+            this._renderPowerupBar();
+            if (this.game) this.game._showAchievement('🛡️ Shield blocked a wrong answer!');
+            return true;
+        }
+        return false;
+    }
+
+    isFrozen() {
+        return this.powerups.freeze.active;
+    }
+
+    _renderPowerupBar() {
+        let powerupBar = document.getElementById('powerupBar');
+        if (!powerupBar) {
+            const coinBar = document.querySelector('.coin-bar');
+            if (coinBar) {
+                powerupBar = document.createElement('div');
+                powerupBar.id = 'powerupBar';
+                powerupBar.className = 'powerup-bar';
+                coinBar.insertAdjacentElement('afterend', powerupBar);
+            } else {
+                return;
+            }
+        }
+        
+        powerupBar.innerHTML = `
+            <button class="pu-btn" onclick="window.powerupSystem.usePowerup('shield')" ${this.getCount('shield') === 0 ? 'disabled' : ''}>
+                🛡️ Shield <span class="pu-count">×${this.getCount('shield')}</span>
+                ${this.powerups.shield.active ? '<span class="pu-active">ACTIVE</span>' : ''}
+            </button>
+            <button class="pu-btn" onclick="window.powerupSystem.usePowerup('freeze')" ${this.getCount('freeze') === 0 ? 'disabled' : ''}>
+                ⏸️ Freeze <span class="pu-count">×${this.getCount('freeze')}</span>
+                ${this.powerups.freeze.active ? '<span class="pu-active">ACTIVE</span>' : ''}
+            </button>
+            <button class="pu-btn" onclick="window.powerupSystem.usePowerup('skip')" ${this.getCount('skip') === 0 ? 'disabled' : ''}>
+                ⏭️ Skip <span class="pu-count">×${this.getCount('skip')}</span>
+            </button>
+            <button class="pu-btn" onclick="window.powerupSystem.usePowerup('doublePoints')" ${this.getCount('doublePoints') === 0 ? 'disabled' : ''}>
+                ✨ 2x Points <span class="pu-count">×${this.getCount('doublePoints')}</span>
+                ${this.doublePointsActive ? '<span class="pu-active">ACTIVE</span>' : ''}
+            </button>
+        `;
+    }
+
+    cleanup() {
+        if (this.freezeTimer) {
+            clearTimeout(this.freezeTimer);
+            this.freezeTimer = null;
+        }
+        this.powerups.shield.active = false;
+        this.powerups.freeze.active = false;
+        this.doublePointsActive = false;
+        if (this.game) {
+            this.game.baseScore = this.originalBaseScore;
+        }
+    }
+}
+
+// ============================================
+// CALCULATOR FUNCTIONS
+// ============================================
+
 let calcExpression = '';
 let calcAngleDeg   = true;
 
@@ -183,9 +468,7 @@ function calcToggleAngle() {
     document.getElementById('angleToggle').textContent = 'Mode: ' + (calcAngleDeg ? 'DEG' : 'RAD');
 }
 
-// Safe math parser — no eval() used anywhere
 function safeMathParse(raw) {
-    // Normalise input
     let src = raw
         .replace(/×/g, '*').replace(/÷/g, '/')
         .replace(/π/g, '3.14159265358979')
@@ -214,7 +497,6 @@ function safeMathParse(raw) {
         let v = parsePow();
         while (pos < src.length && (peek() === '*' || peek() === '/')) {
             const op = src[pos++];
-            // handle **
             if (op === '*' && peek() === '*') { pos++; v = Math.pow(v, parsePow()); continue; }
             const r = parsePow();
             v = op === '*' ? v * r : v / r;
@@ -231,20 +513,17 @@ function safeMathParse(raw) {
     }
 
     function parsePrimary() {
-        // Number
         if (/[\d.]/.test(peek() || '')) {
             let num = '';
             while (pos < src.length && /[\d.]/.test(src[pos])) num += src[pos++];
             return parseFloat(num);
         }
-        // Parenthesised expression
         if (peek() === '(') {
             consume('(');
             const v = parseExpr();
             consume(')');
             return v;
         }
-        // Named functions / constants
         const rest = src.slice(pos);
         const fnMatch = rest.match(/^(sin|cos|tan|log|ln|sqrt|√|abs)/);
         if (fnMatch) {
@@ -283,6 +562,10 @@ function calcEquals() {
     }
 }
 
+// ============================================
+// LEADERBOARD FUNCTIONS
+// ============================================
+
 const LB_KEY  = 'mathQuest_lb_' + window.currentUserId + '_' + currentMode;
 const LB_MAX  = 20;
 const TIERS   = [
@@ -295,7 +578,7 @@ const TIERS   = [
 
 function lbLoad() { try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch(e) { return []; } }
 function lbSave(e) { localStorage.setItem(LB_KEY, JSON.stringify(e)); }
-function lbGetName() { return localStorage.getItem('mathQuest_playerName_' + window.currentUserId) || ''; }
+function lbGetName() { return localStorage.getItem('mathQuest_playerName_' + window.currentUserId) || window.currentUsername || ''; }
 
 function lbSetName() {
     const val = document.getElementById('lbNameInput').value.trim();
@@ -328,12 +611,10 @@ function lbRender() {
     const myName  = lbGetName();
     const body    = document.getElementById('lbBody');
     const yourPos = document.getElementById('lbYourPos');
-    const inp     = document.getElementById('lbNameInput');
-    if (myName && inp && !inp.value) inp.value = myName;
 
     if (!entries.length) {
         body.innerHTML = '<div class="lb-empty-msg">No scores yet.<br>Complete a level to appear!</div>';
-        yourPos.style.display = 'none';
+        if (yourPos) yourPos.style.display = 'none';
         return;
     }
 
@@ -343,7 +624,7 @@ function lbRender() {
         const slice = entries.slice(from-1, to);
         if (!slice.length) return;
         html += `<div class="lb-tier"><div class="lb-tier-header ${tier.cls}"><span class="lb-tier-icon">${tier.icon}</span><span>${tier.label}</span></div><div class="lb-tier-entries">`;
-        slice.forEach((e,i) => {
+        slice.forEach((e) => {
             const isMe = e.name === myName;
             const init = e.name.substring(0,2).toUpperCase();
             html += `<div class="lb-entry ${isMe?'is-me':''}">
@@ -357,19 +638,65 @@ function lbRender() {
     body.innerHTML = html;
 
     const myPos = entries.findIndex(e => e.name === myName);
-    if (myPos !== -1 && myName) {
+    if (myPos !== -1 && myName && yourPos) {
         const tier = TIERS.find(t => myPos+1 >= t.range[0] && myPos+1 <= t.range[1]);
         yourPos.style.display = 'block';
         yourPos.innerHTML = `You are <strong>#${myPos+1}</strong>${tier?' · '+tier.icon+' '+tier.label:''} · <strong>${entries[myPos].score.toLocaleString()}</strong> pts`;
-    } else {
+    } else if (yourPos) {
         yourPos.style.display = 'none';
     }
 }
+
+// ============================================
+// INITIALIZATION - Add power-ups to game
+// ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
     const lb = document.getElementById('lbPanel');
     if (lb && window.innerWidth > 899) lb.style.display = '';
     lbRender();
+    
+    // Initialize power-up system when game is ready
+    const checkGameInterval = setInterval(() => {
+        if (typeof window.game !== 'undefined' && window.game && !window.powerupSystem) {
+            window.powerupSystem = new PowerupSystem(window.game);
+            
+            // Modify checkAnswer to respect freeze power-up and shield
+            const originalCheckAnswer = window.game.checkAnswer;
+            window.game.checkAnswer = function(choice) {
+                if (window.powerupSystem && window.powerupSystem.isFrozen()) {
+                    this._showAchievement('⏸️ Timer is frozen! Cannot answer yet.');
+                    return;
+                }
+                if (choice !== this.correctAnswerPosition && window.powerupSystem && window.powerupSystem.shouldBlockWrong()) {
+                    // Shield blocks the wrong answer - treat as correct
+                    this.correctCount++;
+                    this._playSound('correct');
+                    this._updateStarsPreview();
+                    
+                    // Skip the normal wrong answer handling
+                    setTimeout(() => {
+                        this.questionCount++;
+                        this._updateProgress();
+                        if (this.questionCount < this.questionsPerLevel) {
+                            this.secondsLeft = this.timePerQuestion;
+                            this.generateQuestion();
+                        } else {
+                            clearInterval(this.timerInterval);
+                            this.levelCompleted = true;
+                            this._calculateStars();
+                            this._playStarSound();
+                            this._showLevelComplete();
+                        }
+                    }, 1000);
+                    return;
+                }
+                originalCheckAnswer.call(this, choice);
+            };
+            
+            clearInterval(checkGameInterval);
+        }
+    }, 100);
 });
 </script>
 
