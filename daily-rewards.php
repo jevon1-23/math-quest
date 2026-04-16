@@ -54,6 +54,7 @@ requireLogin();  // This forces login if not logged in
             <div style="background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 20px;">
                 <span style="color: #ffd700;">🪙 Extra Spin: </span>
                 <span style="color: white; font-weight: bold;">500 Coins</span>
+                <span style="color: rgba(255,255,255,0.6); font-size:0.8rem;"> (<span id="paidSpinsLeft">5</span>/5 left today)</span>
             </div>
         </div>
         
@@ -120,12 +121,16 @@ class DailyRewardsSystem {
             this.claimedDays = data.claimedDays || [];
             this.lastFreeSpinDate = data.lastFreeSpinDate;
             this.dailyChallenges = data.dailyChallenges || this.generateDailyChallenges();
+            this.paidSpinsToday = data.paidSpinsToday || 0;
+            this.lastPaidSpinDate = data.lastPaidSpinDate || null;
         } else {
             this.lastClaimDate = null;
             this.streak = 0;
             this.claimedDays = [];
             this.lastFreeSpinDate = null;
             this.dailyChallenges = this.generateDailyChallenges();
+            this.paidSpinsToday = 0;
+            this.lastPaidSpinDate = null;
         }
     }
     
@@ -135,7 +140,9 @@ class DailyRewardsSystem {
             streak: this.streak,
             claimedDays: this.claimedDays,
             lastFreeSpinDate: this.lastFreeSpinDate,
-            dailyChallenges: this.dailyChallenges
+            dailyChallenges: this.dailyChallenges,
+            paidSpinsToday: this.paidSpinsToday,
+            lastPaidSpinDate: this.lastPaidSpinDate
         }));
     }
     
@@ -160,6 +167,24 @@ class DailyRewardsSystem {
                 freeBtn.style.opacity = '0.5';
                 freeBtn.style.cursor = 'not-allowed';
                 if (freeStatus) freeStatus.innerHTML = 'Used Today';
+            }
+        }
+
+        // Update paid spins remaining
+        const today = new Date().toDateString();
+        const lastPaidDay = this.lastPaidSpinDate ? new Date(this.lastPaidSpinDate).toDateString() : null;
+        const spinsLeft = (today !== lastPaidDay) ? 5 : Math.max(0, 5 - this.paidSpinsToday);
+        const paidSpinsLeftEl = document.getElementById('paidSpinsLeft');
+        if (paidSpinsLeftEl) paidSpinsLeftEl.textContent = spinsLeft;
+
+        const paidBtn = document.getElementById('paidSpinBtn');
+        if (paidBtn) {
+            if (spinsLeft <= 0) {
+                paidBtn.style.opacity = '0.5';
+                paidBtn.style.cursor = 'not-allowed';
+            } else {
+                paidBtn.style.opacity = '1';
+                paidBtn.style.cursor = 'pointer';
             }
         }
     }
@@ -274,6 +299,41 @@ class DailyRewardsSystem {
         this.updateNavCoins();
     }
     
+    showAlreadyClaimedPopup() {
+        const existingPopup = document.querySelector('.popup-overlay');
+        if (existingPopup) existingPopup.remove();
+        const popup = document.createElement('div');
+        popup.className = 'popup-overlay already-claimed-overlay';
+        popup.innerHTML = `
+            <div class="popup-card already-claimed-card">
+                <div class="already-claimed-icon">🎁</div>
+                <div class="already-claimed-title">Already Claimed!</div>
+                <div class="already-claimed-subtitle">Come back tomorrow for your next reward</div>
+                <div class="already-claimed-timer" id="claimCountdown"></div>
+                <button class="popup-close-btn already-claimed-btn" onclick="this.closest('.popup-overlay').remove()">Got it! 👍</button>
+            </div>
+        `;
+        document.body.appendChild(popup);
+        // Countdown to midnight
+        function updateCountdown() {
+            const now = new Date();
+            const midnight = new Date();
+            midnight.setHours(24, 0, 0, 0);
+            const diff = midnight - now;
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            const el = document.getElementById('claimCountdown');
+            if (el) el.textContent = `⏰ Resets in ${h}h ${m}m ${s}s`;
+        }
+        updateCountdown();
+        const interval = setInterval(() => {
+            if (!document.getElementById('claimCountdown')) { clearInterval(interval); return; }
+            updateCountdown();
+        }, 1000);
+        setTimeout(() => { if (popup && popup.parentNode) popup.remove(); }, 5000);
+    }
+
     showPopup(amount, icon, name, message = null) {
         // Remove any existing popup
         const existingPopup = document.querySelector('.popup-overlay');
@@ -337,6 +397,17 @@ class DailyRewardsSystem {
                 return;
             }
         } else {
+            // Reset paid spin count if it's a new day
+            const today = new Date().toDateString();
+            const lastPaidDay = this.lastPaidSpinDate ? new Date(this.lastPaidSpinDate).toDateString() : null;
+            if (today !== lastPaidDay) {
+                this.paidSpinsToday = 0;
+            }
+            // Check 5-spin daily limit
+            if (this.paidSpinsToday >= 5) {
+                this.showPopup(0, '🚫', 'Daily Limit Reached', 'You have used all 5 paid spins for today! Come back tomorrow for more.');
+                return;
+            }
             // Paid spin - check coins
             let currentCoins = parseInt(localStorage.getItem('mathQuest_coins') || '0', 10);
             if (currentCoins < 500) {
@@ -347,6 +418,10 @@ class DailyRewardsSystem {
             localStorage.setItem('mathQuest_coins', currentCoins);
             this.syncCoinsToServer(-500);
             this.updateNavCoins();
+            // Track paid spin
+            this.paidSpinsToday++;
+            this.lastPaidSpinDate = new Date().toISOString();
+            this.saveData();
         }
         
         const totalProb = this.wheelRewards.reduce((sum, r) => sum + r.probability, 0);

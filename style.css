@@ -2489,3 +2489,44 @@ body.login-page::after, body.register-page::after {
         justify-content: center;
     }
 }
+/* Already Claimed Daily Reward Popup */
+.already-claimed-overlay .popup-card {
+    border-color: rgba(255, 150, 50, 0.8);
+    background: linear-gradient(135deg, #1a1a2e, #2d1a00);
+}
+.already-claimed-icon {
+    font-size: 4rem;
+    margin-bottom: 12px;
+    animation: gentleBounce 1.5s ease infinite;
+}
+.already-claimed-title {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #ffaa44;
+    font-family: 'Fredoka One', cursive;
+    margin-bottom: 8px;
+}
+.already-claimed-subtitle {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+}
+.already-claimed-timer {
+    background: rgba(255, 170, 68, 0.15);
+    border: 1px solid rgba(255, 170, 68, 0.4);
+    border-radius: 20px;
+    padding: 8px 18px;
+    color: #ffcc88;
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 16px;
+    display: inline-block;
+}
+.already-claimed-btn {
+    background: linear-gradient(135deg, #ff9922, #e06000) !important;
+    color: white !important;
+}
+@keyframes gentleBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
