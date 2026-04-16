@@ -40,6 +40,9 @@ $isBeginner = $skill === 'beginner';
             margin: 10px 0;
             justify-content: center;
             flex-wrap: wrap;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
         }
         .pu-btn {
             background: linear-gradient(135deg, #4a5568, #2d3748);
@@ -194,17 +197,17 @@ if (!preg_match('/^[a-z\-]+\/[a-z\-]+\.js$/', $jsFile)) {
 
 <script>
 // ============================================
-// POWER-UP SYSTEM (Built directly into game)
+// POWER-UP SYSTEM
 // ============================================
 
 class PowerupSystem {
     constructor(gameInstance) {
         this.game = gameInstance;
         this.powerups = {
-            shield: { count: 3, active: false, cost: 200 },      // Start with 3 shields
-            freeze: { count: 2, active: false, cost: 150 },      // Start with 2 freezes
-            skip: { count: 3, active: false, cost: 100 },        // Start with 3 skips
-            doublePoints: { count: 1, active: false, cost: 250 }  // Start with 1 double points
+            shield: { count: 0, active: false },
+            freeze: { count: 0, active: false },
+            skip: { count: 0, active: false },
+            doublePoints: { count: 0, active: false }
         };
         this.freezeTimer = null;
         this.doublePointsActive = false;
@@ -213,6 +216,7 @@ class PowerupSystem {
     }
 
     _loadInventory() {
+        // Load from localStorage (where shop saves power-ups)
         const saved = localStorage.getItem('mathQuest_powerups');
         if (saved) {
             try {
@@ -224,6 +228,26 @@ class PowerupSystem {
                 });
             } catch(e) {}
         }
+        
+        // Also check individual power-up items from shop
+        const shieldCount = localStorage.getItem('powerup_shield');
+        const freezeCount = localStorage.getItem('powerup_freeze');
+        const skipCount = localStorage.getItem('powerup_skip');
+        const doublePointsCount = localStorage.getItem('powerup_doublePoints');
+        
+        if (shieldCount) this.powerups.shield.count += parseInt(shieldCount) || 0;
+        if (freezeCount) this.powerups.freeze.count += parseInt(freezeCount) || 0;
+        if (skipCount) this.powerups.skip.count += parseInt(skipCount) || 0;
+        if (doublePointsCount) this.powerups.doublePoints.count += parseInt(doublePointsCount) || 0;
+        
+        // Clean up individual items after loading
+        localStorage.removeItem('powerup_shield');
+        localStorage.removeItem('powerup_freeze');
+        localStorage.removeItem('powerup_skip');
+        localStorage.removeItem('powerup_doublePoints');
+        
+        this._saveInventory();
+        console.log('Power-ups loaded:', this.powerups);
     }
 
     _saveInventory() {
@@ -386,12 +410,23 @@ class PowerupSystem {
     _renderPowerupBar() {
         let powerupBar = document.getElementById('powerupBar');
         if (!powerupBar) {
-            const coinBar = document.querySelector('.coin-bar');
-            if (coinBar) {
+            const gameCard = document.getElementById('gameCard');
+            if (gameCard) {
+                // Find the coin-bar or insert at top of game card
+                const existingBar = gameCard.querySelector('.powerup-bar');
+                if (existingBar) return;
+                
                 powerupBar = document.createElement('div');
                 powerupBar.id = 'powerupBar';
                 powerupBar.className = 'powerup-bar';
-                coinBar.insertAdjacentElement('afterend', powerupBar);
+                
+                // Insert after coin-bar or at beginning
+                const coinBar = gameCard.querySelector('.coin-bar');
+                if (coinBar) {
+                    coinBar.insertAdjacentElement('afterend', powerupBar);
+                } else {
+                    gameCard.insertBefore(powerupBar, gameCard.firstChild);
+                }
             } else {
                 return;
             }
@@ -416,6 +451,10 @@ class PowerupSystem {
         `;
     }
 
+    showPowerupBar() {
+        this._renderPowerupBar();
+    }
+
     cleanup() {
         if (this.freezeTimer) {
             clearTimeout(this.freezeTimer);
@@ -438,8 +477,10 @@ let calcExpression = '';
 let calcAngleDeg   = true;
 
 function calcUpdateDisplay() {
-    document.getElementById('calcExpr').textContent = calcExpression;
-    document.getElementById('calcVal').textContent  = calcExpression || '0';
+    const exprEl = document.getElementById('calcExpr');
+    const valEl = document.getElementById('calcVal');
+    if (exprEl) exprEl.textContent = calcExpression;
+    if (valEl) valEl.textContent = calcExpression || '0';
 }
 
 function calcInput(val) {
@@ -449,8 +490,7 @@ function calcInput(val) {
 
 function calcClear() {
     calcExpression = '';
-    document.getElementById('calcExpr').textContent = '';
-    document.getElementById('calcVal').textContent  = '0';
+    calcUpdateDisplay();
 }
 
 function calcDel() {
@@ -465,7 +505,8 @@ function calcFn(fn) {
 
 function calcToggleAngle() {
     calcAngleDeg = !calcAngleDeg;
-    document.getElementById('angleToggle').textContent = 'Mode: ' + (calcAngleDeg ? 'DEG' : 'RAD');
+    const toggle = document.getElementById('angleToggle');
+    if (toggle) toggle.textContent = 'Mode: ' + (calcAngleDeg ? 'DEG' : 'RAD');
 }
 
 function safeMathParse(raw) {
@@ -478,16 +519,16 @@ function safeMathParse(raw) {
     const toRad = v => calcAngleDeg ? v * Math.PI / 180 : v;
     let pos = 0;
 
-    function peek()  { return src[pos]; }
+    function peek() { return src[pos]; }
     function consume(ch) { if (src[pos] !== ch) throw new Error('Expected ' + ch); pos++; }
 
-    function parseExpr()   { return parseAddSub(); }
+    function parseExpr() { return parseAddSub(); }
 
     function parseAddSub() {
         let v = parseMulDiv();
         while (pos < src.length && (peek() === '+' || peek() === '-')) {
             const op = src[pos++];
-            const r  = parseMulDiv();
+            const r = parseMulDiv();
             v = op === '+' ? v + r : v - r;
         }
         return v;
@@ -508,7 +549,7 @@ function safeMathParse(raw) {
 
     function parseUnary() {
         if (peek() === '-') { pos++; return -parsePrimary(); }
-        if (peek() === '+') { pos++; return  parsePrimary(); }
+        if (peek() === '+') { pos++; return parsePrimary(); }
         return parsePrimary();
     }
 
@@ -536,7 +577,7 @@ function safeMathParse(raw) {
                 case 'cos': return Math.cos(toRad(arg));
                 case 'tan': return Math.tan(toRad(arg));
                 case 'log': return Math.log10(arg);
-                case 'ln':  return Math.log(arg);
+                case 'ln': return Math.log(arg);
                 case 'sqrt': case '√': return Math.sqrt(arg);
                 case 'abs': return Math.abs(arg);
             }
@@ -551,13 +592,16 @@ function safeMathParse(raw) {
 
 function calcEquals() {
     try {
-        const result  = safeMathParse(calcExpression);
+        const result = safeMathParse(calcExpression);
         const rounded = Math.round(result * 1e10) / 1e10;
-        document.getElementById('calcExpr').textContent = calcExpression + ' =';
-        document.getElementById('calcVal').textContent  = isNaN(rounded) ? 'Error' : rounded;
+        const exprEl = document.getElementById('calcExpr');
+        const valEl = document.getElementById('calcVal');
+        if (exprEl) exprEl.textContent = calcExpression + ' =';
+        if (valEl) valEl.textContent = isNaN(rounded) ? 'Error' : rounded;
         calcExpression = isNaN(rounded) ? '' : String(rounded);
     } catch(e) {
-        document.getElementById('calcVal').textContent = 'Error';
+        const valEl = document.getElementById('calcVal');
+        if (valEl) valEl.textContent = 'Error';
         calcExpression = '';
     }
 }
@@ -566,24 +610,24 @@ function calcEquals() {
 // LEADERBOARD FUNCTIONS
 // ============================================
 
-const LB_KEY  = 'mathQuest_lb_' + window.currentUserId + '_' + currentMode;
-const LB_MAX  = 20;
-const TIERS   = [
-    { label:'Champion', icon:'🏆', cls:'champion', range:[1,1],   avatarBg:'#d97706' },
-    { label:'Diamond',  icon:'💎', cls:'diamond',  range:[2,4],   avatarBg:'#7c3aed' },
-    { label:'Gold',     icon:'🥇', cls:'gold',     range:[5,8],   avatarBg:'#ca8a04' },
-    { label:'Silver',   icon:'🥈', cls:'silver',   range:[9,13],  avatarBg:'#64748b' },
-    { label:'Bronze',   icon:'🥉', cls:'bronze',   range:[14,20], avatarBg:'#b45309' },
+const LB_KEY = 'mathQuest_lb_' + (window.currentUserId || 'guest') + '_' + currentMode;
+const LB_MAX = 20;
+const TIERS = [
+    { label:'Champion', icon:'🏆', cls:'champion', range:[1,1], avatarBg:'#d97706' },
+    { label:'Diamond', icon:'💎', cls:'diamond', range:[2,4], avatarBg:'#7c3aed' },
+    { label:'Gold', icon:'🥇', cls:'gold', range:[5,8], avatarBg:'#ca8a04' },
+    { label:'Silver', icon:'🥈', cls:'silver', range:[9,13], avatarBg:'#64748b' },
+    { label:'Bronze', icon:'🥉', cls:'bronze', range:[14,20], avatarBg:'#b45309' },
 ];
 
 function lbLoad() { try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch(e) { return []; } }
 function lbSave(e) { localStorage.setItem(LB_KEY, JSON.stringify(e)); }
-function lbGetName() { return localStorage.getItem('mathQuest_playerName_' + window.currentUserId) || window.currentUsername || ''; }
+function lbGetName() { return localStorage.getItem('mathQuest_playerName_' + (window.currentUserId || 'guest')) || window.currentUsername || ''; }
 
 function lbSetName() {
-    const val = document.getElementById('lbNameInput').value.trim();
+    const val = document.getElementById('lbNameInput')?.value.trim();
     if (!val) return;
-    localStorage.setItem('mathQuest_playerName_' + window.currentUserId, val);
+    localStorage.setItem('mathQuest_playerName_' + (window.currentUserId || 'guest'), val);
     lbRender();
 }
 
@@ -608,9 +652,11 @@ function lbColor(name) {
 
 function lbRender() {
     const entries = lbLoad();
-    const myName  = lbGetName();
-    const body    = document.getElementById('lbBody');
+    const myName = lbGetName();
+    const body = document.getElementById('lbBody');
     const yourPos = document.getElementById('lbYourPos');
+
+    if (!body) return;
 
     if (!entries.length) {
         body.innerHTML = '<div class="lb-empty-msg">No scores yet.<br>Complete a level to appear!</div>';
@@ -648,7 +694,7 @@ function lbRender() {
 }
 
 // ============================================
-// INITIALIZATION - Add power-ups to game
+// INITIALIZATION
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -661,7 +707,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.game !== 'undefined' && window.game && !window.powerupSystem) {
             window.powerupSystem = new PowerupSystem(window.game);
             
-            // Modify checkAnswer to respect freeze power-up and shield
+            // Force add power-up bar
+            setTimeout(() => {
+                if (window.powerupSystem) {
+                    window.powerupSystem._renderPowerupBar();
+                }
+            }, 500);
+            
+            // Also render when level starts
+            const originalStartLevel = window.game.startLevel;
+            window.game.startLevel = function(level) {
+                originalStartLevel.call(this, level);
+                setTimeout(() => {
+                    if (window.powerupSystem) {
+                        window.powerupSystem._renderPowerupBar();
+                    }
+                }, 100);
+            };
+            
+            // Modify checkAnswer for freeze and shield
             const originalCheckAnswer = window.game.checkAnswer;
             window.game.checkAnswer = function(choice) {
                 if (window.powerupSystem && window.powerupSystem.isFrozen()) {
@@ -669,12 +733,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 if (choice !== this.correctAnswerPosition && window.powerupSystem && window.powerupSystem.shouldBlockWrong()) {
-                    // Shield blocks the wrong answer - treat as correct
                     this.correctCount++;
                     this._playSound('correct');
                     this._updateStarsPreview();
                     
-                    // Skip the normal wrong answer handling
                     setTimeout(() => {
                         this.questionCount++;
                         this._updateProgress();
